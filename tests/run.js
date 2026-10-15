@@ -4,6 +4,7 @@
 import { run } from './harness.js';
 import './names.test.js';
 import './csv.test.js';
+import './template.test.js';
 
 const list = document.getElementById('results');
 const summary = document.getElementById('summary');
