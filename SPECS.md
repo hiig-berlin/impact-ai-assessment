@@ -335,6 +335,8 @@ Right column, the **preview**:
 - **Previews** are framed like the PNG files (square, or extended for the legend), with embedded fonts, on a light checkerboard so transparent areas are visible. They update when options change.
 - **Empty state** before a CSV is loaded: a placeholder in the preview area, and the downloads disabled.
 
+**Colours**: primary colour `#007ba3` (the Social Sustainability level-5 blue) for primary buttons, selected states, the active tab, the legend switch and links; `#00617f` for hover. White text on `#007ba3` has a contrast of 4.8 : 1. The other UI colours are neutral greys.
+
 Accessibility basics: keyboard-usable controls, visible focus, sufficient contrast for UI text. Tabs use the ARIA tab pattern (arrow keys move between tabs), the legend switch is `role="switch"`, and icon-only buttons and links have `aria-label`s.
 
 ## 9. Reference data and tests
