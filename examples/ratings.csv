@@ -2,9 +2,9 @@ criterion number;criterion name;score
 1;Objective & realisation;3
 2;Impact achievements;5
 3;Relevance of impact achievements;4
-4;Potential harm & mitigation;5
+4;Potential harm & mitigation;2
 5;Harm-management;5
-6;Necessity & proportionality;5
+6;Necessity & proportionality;1
 7;Accountability;2
 8;Decision process & design;4
 9;Inclusion, participation & co-design;3
@@ -12,14 +12,14 @@ criterion number;criterion name;score
 11;Sovereignty & power relations;3
 12;Accessibility;5
 13;Non-discrimination;3
-14;Data protection;5
+14;Data protection;1
 15;Human oversight;5
 16;Self-determined use;3
 17;AI literacy;4
 18;Open for validation & contestation;5
-19;Technical transparency;4
+19;Technical transparency;2
 20;User transparency;5
-21;Complexity, energy & emissions;5
+21;Complexity, energy & emissions;2
 22;Natural resources;5
 23;Model & dataset sharing;5
-24;Future perspectives & collaboration;5
+24;Future perspectives & collaboration;1
