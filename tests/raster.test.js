@@ -14,7 +14,7 @@ import {
 } from '../raster.js';
 
 const files = generateFiles(base());
-const legendBox = await measureLegend(file(files, 'overview-legend.svg').svg);
+const legendBox = base().legendBox;
 const layoutOf = (path) => file(files, path).layout;
 
 async function decode(blob) {
@@ -46,11 +46,12 @@ test('raster: square frame with 5 % margin at ×1, ×2, ×4', () => {
   }
 });
 
-test('raster: legend box is measured tightly below the chart', () => {
-  assert(legendBox, 'legend found');
-  // The legend sits in the lower right of the A4 page, inside the page.
-  assert(legendBox.x > CROP.x && legendBox.x + legendBox.width < 2481, JSON.stringify(legendBox));
-  assert(legendBox.y > 2500 && legendBox.y + legendBox.height < 3508, JSON.stringify(legendBox));
+test('raster: measureLegend finds the legend box of an output SVG', async () => {
+  // The bottom -legend overview has the legend LEGEND_GAP below the crop square.
+  const measured = await measureLegend(file(files, 'overview-legend.svg').svg);
+  const expected = legendLayout(legendBox, 'bottom').box;
+  for (const key of ['x', 'y', 'width', 'height'])
+    assertClose(measured[key], expected[key], 0.5, key);
 });
 
 test('raster: legend frames – A4 for top/bottom, 16:9 for left/right, same pie size (§5.2)', () => {

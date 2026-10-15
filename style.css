@@ -261,10 +261,6 @@ svg {
   font-weight: 600;
 }
 
-.icon-button.with-label {
-  padding: 0 12px;
-}
-
 .icon-button svg {
   width: 20px;
   height: 20px;
@@ -273,6 +269,40 @@ svg {
 .icon-button:hover {
   background: var(--track);
   color: var(--ink);
+}
+
+/* Tooltip below a header link, on hover and keyboard focus. It is positioned
+   absolutely, so nothing else moves when it appears. */
+.icon-button[data-tooltip] {
+  position: relative;
+}
+
+.icon-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 30;
+  transform: translate(-50%, -4px);
+  padding: 6px 10px;
+  border-radius: var(--radius-thumb);
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+.icon-button[data-tooltip]:hover::after,
+.icon-button[data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0.15s;
 }
 
 #download-all {
@@ -1029,6 +1059,7 @@ svg {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  width: max-content;
   max-width: calc(100% - 32px);
   padding: 6px 6px 6px 14px;
   border-radius: 999px;
@@ -1209,14 +1240,6 @@ svg {
     width: 100%;
   }
 
-  .icon-button.with-label {
-    padding: 0;
-  }
-
-  .icon-button.with-label span {
-    display: none;
-  }
-
   #download-all {
     margin-left: auto;
   }
@@ -1232,6 +1255,7 @@ svg {
   .floating-bar {
     position: static;
     transform: none;
+    width: auto;
     max-width: 100%;
     border-radius: var(--radius-stage);
   }

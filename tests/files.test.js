@@ -9,6 +9,7 @@ import {
   normaliseAngle,
   polar,
   serializeElement,
+  LEGEND_GAP,
   LEGEND_POSITIONS,
   legendLayout,
 } from '../pie.js';
@@ -168,9 +169,9 @@ test('original position: score files keep their score-overview position', () => 
 });
 
 for (const startAngle of [0, 270, 7]) {
-  test(`start angle ${startAngle}°: every cluster and score file is a gauge from the start angle`, () => {
+  test(`start angle ${startAngle}°: every cluster, score and slice file starts at the start angle`, () => {
     const files = generateFiles(prepared, { piePosition: 'start', startAngle });
-    for (const f of files.filter((f) => f.kind === 'cluster' || f.kind === 'score')) {
+    for (const f of files.filter((f) => f.kind !== 'overview')) {
       const doc = parseSvg(f.svg);
       const groups = [...doc.querySelectorAll('#Diagram > g > g')];
       groups.forEach((g, i) => {
@@ -184,8 +185,8 @@ for (const startAngle of [0, 270, 7]) {
         assert(textIsUpright(doc, g.id, span.mid), `${f.path} ${g.id}: text upright`);
       });
     }
-    // Overviews and slices ignore the option.
-    for (const f of files.filter((f) => f.kind === 'overview' || f.kind === 'slice')) {
+    // Overviews ignore the option.
+    for (const f of files.filter((f) => f.kind === 'overview')) {
       assertEqual(f.svg, original.find((o) => o.path === f.path).svg, f.path);
     }
   });
@@ -271,9 +272,8 @@ test('serializer: escapes text and attributes, keeps namespaces, self-closes emp
   );
 });
 
-test('legend position: only the two -legend overviews have a legend; bottom is unchanged', async () => {
-  const { measureLegend } = await import('../raster.js');
-  const legendBox = await measureLegend(file(original, 'overview-legend.svg').svg);
+test('legend position: only the two -legend overviews have a legend; bottom is the default', () => {
+  const legendBox = prepared.legendBox;
   const bottom = generateFiles(prepared, { legendPosition: 'bottom', legendBox });
   assertEqual(
     bottom.map((f) => f.svg),
@@ -294,10 +294,11 @@ test('legend position: only the two -legend overviews have a legend; bottom is u
 });
 
 test('legend position: legend moved beside, above or below the crop square; page shape', async () => {
-  const { measureLegend } = await import('../raster.js');
-  const box = await measureLegend(file(original, 'overview-legend.svg').svg);
+  const box = prepared.legendBox;
+  // The measured template legend sits in the lower right of the A4 page.
+  assert(box.x > CROP.x && box.x + box.width < 2481 && box.y > 2500, JSON.stringify(box));
   const crop = { left: CROP.x, top: CROP.y, right: CROP.x + CROP.size, bottom: CROP.y + CROP.size };
-  const gap = box.y - crop.bottom;
+  const gap = LEGEND_GAP;
   const inset = crop.right - (box.x + box.width);
   const near = (a, b, what) => assertClose(a, b, 1e-6, what);
   const right = legendLayout(box, 'right').box;
@@ -309,10 +310,18 @@ test('legend position: legend moved beside, above or below the crop square; page
   const top = legendLayout(box, 'top').box;
   near(top.y + top.height, crop.top - gap, 'top y');
   near(top.x, box.x, 'top x');
-  assertEqual(legendLayout(box, 'bottom').box, box);
-  // Page shapes: A4 for top/bottom, 16:9 for left/right.
+  const bottomBox = legendLayout(box, 'bottom').box;
+  near(bottomBox.y, crop.bottom + gap, 'bottom y');
+  near(bottomBox.x, box.x, 'bottom x');
+  // Page shapes: A4 for top/bottom (content centred vertically), 16:9 for left/right.
   for (const position of LEGEND_POSITIONS) {
-    const { shape, viewBox } = legendLayout(box, position);
+    const { shape, viewBox, box: moved } = legendLayout(box, position);
+    const top = Math.min(crop.top, moved.y);
+    const bottom = Math.max(crop.bottom, moved.y + moved.height);
+    assert(
+      top >= viewBox.y && bottom <= viewBox.y + viewBox.height,
+      `${position}: content on the page`,
+    );
     const ratio = viewBox.height / viewBox.width;
     if (position === 'top' || position === 'bottom') {
       assertEqual(shape, 'a4');
@@ -332,7 +341,7 @@ test('legend position: legend moved beside, above or below the crop square; page
   );
   const vb = doc.documentElement.getAttribute('viewBox').split(' ').map(Number);
   assertClose(vb[3] / vb[2], 9 / 16, 1e-3, 'viewBox ratio');
-  await assertThrows(() => generateFiles(prepared, { legendPosition: 'left' }), /legend box/);
+  await assertThrows(() => legendLayout(null, 'left'), /legend box/);
   await assertThrows(
     () => generateFiles(prepared, { legendPosition: 'middle', legendBox: box }),
     /legend position/,

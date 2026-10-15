@@ -1,7 +1,7 @@
 // PNG/JPG rendering of the generated SVGs (SPECS.md §5.1): framing, font
 // embedding and 72 dpi metadata. No UI code.
 
-import { FONT_URLS, SVG_NS, serializeElement, squareFrame } from './pie.js';
+import { FONT_URLS, SVG_NS, measureLegendBox, serializeElement, squareFrame } from './pie.js';
 
 export const RASTER_SIDE = 1080; // px, square side at ×1
 export const RASTER_SCALES = [1, 2, 4];
@@ -13,7 +13,6 @@ export const FORMATS = {
 };
 
 const FONT_FAMILY = 'PT Sans';
-const PATH_SAMPLES = 64; // points sampled per path for the legend's bounding box
 const INCHES_PER_METRE = 39.3701;
 
 // --- Fonts ----------------------------------------------------------------------
@@ -83,35 +82,7 @@ export async function measureLegend(svgText, doc = document) {
     await doc.fonts.load(`700 40px '${FONT_FAMILY}'`);
     await doc.fonts.load(`400 40px '${FONT_FAMILY}'`);
     await doc.fonts.ready;
-    // Element coordinates → root user units.
-    const rootInverse = svg.getScreenCTM().inverse();
-    const box = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
-    const addPoint = (point, matrix) => {
-      const p = new DOMPoint(point.x, point.y).matrixTransform(matrix);
-      box.left = Math.min(box.left, p.x);
-      box.top = Math.min(box.top, p.y);
-      box.right = Math.max(box.right, p.x);
-      box.bottom = Math.max(box.bottom, p.y);
-    };
-    for (const el of svg.querySelectorAll('#Legend path, #Legend text')) {
-      const matrix = rootInverse.multiply(el.getScreenCTM());
-      if (el.localName === 'path') {
-        const length = el.getTotalLength();
-        for (let i = 0; i <= PATH_SAMPLES; i++)
-          addPoint(el.getPointAtLength((length * i) / PATH_SAMPLES), matrix);
-      } else {
-        const b = el.getBBox();
-        for (const [px, py] of [
-          [b.x, b.y],
-          [b.x + b.width, b.y],
-          [b.x, b.y + b.height],
-          [b.x + b.width, b.y + b.height],
-        ]) {
-          addPoint({ x: px, y: py }, matrix);
-        }
-      }
-    }
-    return { x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top };
+    return measureLegendBox(svg);
   } finally {
     svg.remove();
   }

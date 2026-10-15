@@ -18,7 +18,7 @@ reports and presentations. Everything runs in the browser; nothing is uploaded.
    criteria can be downloaded from the page.
 3. Fix any errors shown (they always name the CSV row). Warnings don't block output.
 4. Choose the options:
-   - **Pie position** for cluster and score files: *original position* (default; the
+   - **Pie position** for cluster, score and slice files: *original position* (default; the
      files stack exactly onto their overview in Affinity) or *start angle* (each pie on
      its own, starting at the given angle, clockwise from 12 o'clock; default 270°).
    - **Legend** for the two overviews: switch it on to preview and download the

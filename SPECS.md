@@ -123,7 +123,7 @@ Everything can be downloaded individually, or as one ZIP named `rating-pie-YYYY-
 
 "Criteria" always means all of a criterion's parts: wedge, rating rings, number and label. The score overview has a blank centre because categories are mixed there, so the category pie would be misleading.
 
-- **Position**: both overviews always start at 12 o'clock. Cluster and score files follow the *pie position* option (§7.1); slice files always keep their category-overview position.
+- **Position**: both overviews always start at 12 o'clock. Cluster, score and slice files follow the *pie position* option (§7.1).
 - **Canvas**: the overviews keep the template's full A4 page. All cluster, score and slice files use the same square crop around the chart centre, `viewBox="40.157 272.634 2400 2400"` (centre ± 1200), so every pie has the same centre and size. In the "original position" mode they line up exactly with their overview when stacked in Affinity.
 - **Affinity layer names**: every generated group gets an `affinity:id` attribute (namespace `https://www.affinity.studio/`), which Affinity shows as the layer name. Cluster groups use the category or score name (`Impact`, `Exemplary`, …). Criterion groups use number and displayed label (`07 Accountability`, or the CSV name), containing `Wedge`, `Rating 1` … `Rating 5`, `Number`, `Label`.
 - **ids**: every output document has unique `id`s.
@@ -146,19 +146,17 @@ Only the two overviews have a legend (`overview-legend`, `overview-scores-legend
 
 - **Option**: legend position **left / right / top / bottom**, default **bottom** (one setting per run). It applies to the `-legend` files in all three formats.
 - **ZIP**: always contains both versions of each overview, with and without legend; the legend versions use the chosen position.
-- **Bottom** is the template's own position: the SVG is the same as in version 1 (the PNG/JPG get the A4 shape, see below).
-- **Other positions**: the generator moves the legend by prepending `translate(dx,dy)` to the `Legend` group's `transform`; the legend itself is otherwise unchanged (§6). The legend keeps the same distance to the chart's square crop as in the template, turned to the chosen side, and is aligned to the same end:
-  - right / left: beside the crop square, bottom edges aligned;
-  - top: above the crop square, right edges aligned (mirroring bottom).
+- **Placement**: the generator moves the legend by prepending `translate(dx,dy)` to the `Legend` group's `transform`; the legend itself is otherwise unchanged (§6). Its bounding box is placed `LEGEND_GAP` (120 template units, 5 % of the crop) away from the chart's square crop, on the chosen side, keeping the template's inset from the crop's edge:
+  - bottom / top: below / above the crop square, right edges aligned;
+  - right / left: beside the crop square, bottom edges aligned.
 - **Page shape** follows the use: left and right are for slides, top and bottom for reports.
 
   | Legend | Shape | SVG `viewBox` | PNG/JPG at ×1 |
   |---|---|---|---|
-  | bottom | A4 portrait | the template page, `0 0 2481 3508` (as in version 1) | 1080 × 1527 |
-  | top | A4 portrait | 2481 × 3508, shifted up so the legend has the same distance from the page top as the chart has in the bottom layout | 1080 × 1527 |
+  | bottom, top | A4 portrait | 2481 × 3508; the chart keeps its horizontal position, chart and legend are centred vertically as one block | 1080 × 1527 |
   | left, right | 16:9 landscape | 4741 × 2667: the crop square plus the raster margin (§5.1) in height | 1920 × 1080 |
 
-  ×2 and ×4 scale these sizes (A4: 2160 × 3055 and 4320 × 6109, rounded). In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group; in the A4 shape, the chart keeps its horizontal position from the template.
+  ×2 and ×4 scale these sizes (A4: 2160 × 3055 and 4320 × 6109, rounded). In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group.
 - **PNG/JPG framing** for the `-legend` files (replaces the "extended canvas" rule of version 1). The frame starts from the square raster frame of §5.1 (crop square plus 5 % margin):
   - A4 (top, bottom): same width, extended to the A4 ratio (height = width × √2), downwards for bottom and upwards for top;
   - 16:9 (left, right): same height, extended to 16:9 width, with chart and legend centred horizontally as in the SVG.
@@ -296,9 +294,9 @@ The centre sectors use the level-5 colour of their category; the icons are centr
 
 - **Angle convention**: degrees clockwise from 12 o'clock (0° = 12 o'clock, 90° = 3 o'clock, 180° = 6 o'clock, 270° = 9 o'clock).
 - **Overviews** start at 0° and run clockwise.
-- **Pie position option** for cluster and score files (one setting per run):
-  - **Original position** (default): each pie keeps its position from its overview (cluster files: category overview, score files: score overview), so the files can be stacked onto the overview.
-  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge. The criterion at index *i* (0, 1, 2 … within the cluster) spans `start + i·15°` to `start + (i+1)·15°`. Any whole number 0–359 is accepted; default **270°**, so the Impact pie starts at 9 o'clock and runs over 12 o'clock towards 3 o'clock.
+- **Pie position option** for cluster, score and slice files (one setting per run):
+  - **Original position** (default): each pie keeps its position from its overview (cluster and slice files: category overview, score files: score overview), so the files can be stacked onto the overview.
+  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge; a slice starts at the start angle. The criterion at index *i* (0, 1, 2 … within the cluster) spans `start + i·15°` to `start + (i+1)·15°`. Any whole number 0–359 is accepted; default **270°**, so the Impact pie starts at 9 o'clock and runs over 12 o'clock towards 3 o'clock.
 - **Moving a criterion**: rotate its wedge and ring paths about the centre from the template span to the target span. In `*-centre` files the category's centre sector and icon are rotated by the same amount, so they stay under their criteria.
 - **Text orientation** (every file, overviews included): take the mid-angle φ of the criterion's span (mod 360).
   - **0° ≤ φ < 180°** (right half): text reads outward, like criterion 1 in the template.
@@ -313,11 +311,11 @@ One page, in English, laid out like an application. The mockup from October 2026
 **Header bar** (full width):
 
 - left: the HIIG emblem (`assets/hiig-emblem.svg`: the building and the I/O squares from the HIIG logo, without lettering, in one grey `#55555c` so the attention stays on the graphics; links to https://www.hiig.de/en/), title **Impact AI Assessment Wheel**, subtitle "Turn assessment scores into report-ready graphics · v<version>";
-- right: icon links, each with a visible tooltip and an `aria-label`:
-  - Impact AI project page: https://www.hiig.de/en/project/impact-ai/
-  - method documentation on Zenodo, shown as "DOI": https://doi.org/10.5281/zenodo.23186663
-  - FAQ: https://www.hiig.de/en/impact-ai-faq/
-  - source code: https://github.com/hiig-berlin/impact-ai-assessment
+- right: icon-only links with an `aria-label` and a tooltip that appears below the icon on hover and keyboard focus (positioned absolutely, so nothing moves):
+  - "Project page": https://www.hiig.de/en/project/impact-ai/
+  - "Method repository" (the method documentation on Zenodo): https://doi.org/10.5281/zenodo.23186663
+  - "FAQ": https://www.hiig.de/en/impact-ai-faq/
+  - "Source code": https://github.com/hiig-berlin/impact-ai-assessment
 - far right: **Download all (ZIP)**, disabled until a valid CSV is loaded.
 
 **Two columns** below the header. The left column is about 340–420 px wide; the right column takes the rest. On narrow screens they stack, left column first.
@@ -430,12 +428,12 @@ SPECS.md
   - an overview in score order matching §9, with a blank centre and separators,
   - both with white outlines, no stray shapes and readable labels on both halves.
 - All snapshot tests in `tests/index.html` pass (§9).
-- In the "original position" mode, cluster and slice files line up with the category overview and score files with the score overview when stacked in Affinity. In the "start angle" mode with 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file.
+- In the "original position" mode, cluster and slice files line up with the category overview and score files with the score overview when stacked in Affinity. In the "start angle" mode with 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file, and every slice starts at 9 o'clock.
 - For any start angle, all labels and numbers are upright (right half reading outward, left half reading inward).
 - A criterion name in the CSV replaces the label in all outputs, positioned correctly on both halves; file names don't change.
 - All SVGs open in Affinity with named layers and editable text in PT Sans.
 - PNG and JPG files are square without legend, and A4 portrait (legend top/bottom) or 16:9 landscape (legend left/right) with legend (§5.1, §5.2), and show PT Sans correctly, also on a computer without PT Sans installed.
-- With the legend at left, right, top or bottom, the overview `-legend` files show the legend on that side, next to a pie of unchanged size; the bottom SVG matches version 1.
+- With the legend at left, right, top or bottom, the overview `-legend` files show the legend on that side, next to a pie of unchanged size, with clear space in between.
 - The page works as described in §8: header links and ZIP button, CSV and options on the left, preview with tabs, gallery and grid views on the right; it stacks on a phone-width screen.
 - Every file can be downloaded individually and as part of the ZIP.
 - Invalid CSVs (missing criterion, score `6`, score `4.5`, score `Good`) show a clear error with the row number and produce no download. Empty rows and duplicate rows don't block output.
