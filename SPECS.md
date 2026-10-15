@@ -1,8 +1,10 @@
-# Rating Pie Generator – Specification
+# Impact AI Assessment Wheel – Specification
 
-A small static website that turns a CSV of criterion scores into the report's radial "24 criteria" diagram, clustered by category (colour) and by score, and exports the diagram plus its individual pie pieces as SVG, PNG and JPG files ready for Affinity and the report.
+A small static website that turns a CSV of criterion scores into the radial "24 criteria" diagram of the [Impact AI assessment method](https://doi.org/10.5281/zenodo.23186663), clustered by category (colour) and by score, and exports the diagram plus its individual pie pieces as SVG, PNG and JPG files ready for Affinity, reports and presentations.
 
-Status: ready for implementation. There are no open decisions.
+The repository and code keep the working name "Rating Pie Generator" (`rating-pie` in file names); "Impact AI Assessment Wheel" is the name shown to users.
+
+Status: version 1 (`v0.1.0-alpha`) is implemented. Round 2 (application layout, §8; legend position, §5.2) is specified and ready for implementation.
 
 ---
 
@@ -22,11 +24,11 @@ Status: ready for implementation. There are no open decisions.
 ### Long-term goals (not in the first version)
 
 - Editing the design (fonts, colours, labels) in the tool. Until then, the design lives in the built-in template and is changed in the repository (§4.1).
-- A legend position option for the `-legend` raster files (e.g. below or to the right of the chart).
 
 ## 2. Users and usage
 
-- A handful of people, creating graphics for a report every couple of weeks.
+- The research group that developed the Impact AI method: a handful of people, creating graphics for a report every couple of weeks.
+- Third parties who apply the published method in their own assessments, for their reports and presentations.
 - Flow: open the page → drop in the CSV → check the preview → download single files or all files as a ZIP.
 - PT Sans is installed on the users' computers, so text renders correctly when the SVGs are opened in Affinity.
 
@@ -121,7 +123,7 @@ Everything can be downloaded individually, or as one ZIP named `rating-pie-YYYY-
 
 "Criteria" always means all of a criterion's parts: wedge, rating rings, number and label. The score overview has a blank centre because categories are mixed there, so the category pie would be misleading.
 
-- **Position**: both overviews always start at 12 o'clock. Cluster and score files follow the *pie position* option (§7.1); slice files always keep their category-overview position.
+- **Position**: both overviews always start at 12 o'clock. Cluster, score and slice files follow the *pie position* option (§7.1).
 - **Canvas**: the overviews keep the template's full A4 page. All cluster, score and slice files use the same square crop around the chart centre, `viewBox="40.157 272.634 2400 2400"` (centre ± 1200), so every pie has the same centre and size. In the "original position" mode they line up exactly with their overview when stacked in Affinity.
 - **Affinity layer names**: every generated group gets an `affinity:id` attribute (namespace `https://www.affinity.studio/`), which Affinity shows as the layer name. Cluster groups use the category or score name (`Impact`, `Exemplary`, …). Criterion groups use number and displayed label (`07 Accountability`, or the CSV name), containing `Wedge`, `Rating 1` … `Rating 5`, `Number`, `Label`.
 - **ids**: every output document has unique `id`s.
@@ -131,12 +133,35 @@ Everything can be downloaded individually, or as one ZIP named `rating-pie-YYYY-
 - Rendered in the browser from the SVG (SVG → `<img>` → `<canvas>` → `toBlob`).
 - **Framing**: the raster shows the content, not the A4 page.
   - Files without legend: a **square** image, **1080 × 1080 px** by default. The square crop from §5 (2400 × 2400) fills it with a margin of 5 % on each side, so the pie is the same size and in the same place in every image, overviews included.
-  - Files with legend: same width, same pie size and position. The canvas is extended downwards (and to the right, if the legend sticks out) to fit the legend's bounding box plus the same margin.
+  - Files with legend: A4 portrait or 16:9 landscape depending on the legend position, with the same pie size (§5.2).
 - **Size option**: ×1 (1080 px, default), ×2 (2160 px), ×4 (4320 px) for the square side. The SVGs stay resolution-independent for print.
 - **72 dpi** is written into the file metadata (PNG `pHYs` chunk, JPEG JFIF density), since `canvas.toBlob` doesn't set it.
 - **Background**: PNG transparent, JPG white (quality 0.92).
 - **Fonts**: an SVG drawn into a canvas can't use the page's web fonts. Before rasterising, embed the vendored PT Sans Regular and Bold as base64 `@font-face` (family `PT Sans`, weights 400 and 700) in the SVG's `<style>`, so PNG/JPG text is correct even on computers without PT Sans. The SVG downloads don't embed the font, so Affinity uses the installed PT Sans.
 - **Memory**: for the ZIP, raster files are created one after another and released after compression, so ×4 doesn't need all images in memory at once.
+
+### 5.2 Legend position
+
+Only the two overviews have a legend (`overview-legend`, `overview-scores-legend`). Cluster, score and slice files never have one.
+
+- **Option**: legend position **left / right / top / bottom**, default **bottom** (one setting per run). It applies to the `-legend` files in all three formats.
+- **ZIP**: always contains both versions of each overview, with and without legend; the legend versions use the chosen position.
+- **Placement**: the generator moves the legend by prepending `translate(dx,dy)` to the `Legend` group's `transform`; the legend itself is otherwise unchanged (§6). Its bounding box is placed `LEGEND_GAP` (120 template units, 5 % of the crop) away from the chart's square crop, on the chosen side, keeping the template's inset from the crop's edge:
+  - bottom / top: below / above the crop square, right edges aligned;
+  - right / left: beside the crop square, bottom edges aligned.
+- **Page shape** follows the use: left and right are for slides, top and bottom for reports.
+
+  | Legend | Shape | SVG `viewBox` | PNG/JPG at ×1 |
+  |---|---|---|---|
+  | bottom, top | A4 portrait | 2481 × 3508; the chart keeps its horizontal position, chart and legend are centred vertically as one block | 1080 × 1527 |
+  | left, right | 16:9 landscape | 4741 × 2667: the crop square plus the raster margin (§5.1) in height | 1920 × 1080 |
+
+  ×2 and ×4 scale these sizes (A4: 2160 × 3055 and 4320 × 6109, rounded). In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group.
+- **PNG/JPG framing** for the `-legend` files (replaces the "extended canvas" rule of version 1). The frame starts from the square raster frame of §5.1 (crop square plus 5 % margin):
+  - A4 (top, bottom): same width, extended to the A4 ratio (height = width × √2), downwards for bottom and upwards for top;
+  - 16:9 (left, right): same height, extended to 16:9 width, with chart and legend centred horizontally as in the SVG.
+  - So the A4 rasters have the margins of the square images, not the SVG page's margins. Areas without content are transparent (PNG) or white (JPG).
+- Exact offsets and the fit of the legend in each shape are checked by eye before the snapshots are committed.
 
 ## 6. Template structure (`template/template.svg`)
 
@@ -269,9 +294,9 @@ The centre sectors use the level-5 colour of their category; the icons are centr
 
 - **Angle convention**: degrees clockwise from 12 o'clock (0° = 12 o'clock, 90° = 3 o'clock, 180° = 6 o'clock, 270° = 9 o'clock).
 - **Overviews** start at 0° and run clockwise.
-- **Pie position option** for cluster and score files (one setting per run):
-  - **Original position** (default): each pie keeps its position from its overview (cluster files: category overview, score files: score overview), so the files can be stacked onto the overview.
-  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge. The criterion at index *i* (0, 1, 2 … within the cluster) spans `start + i·15°` to `start + (i+1)·15°`. Any whole number 0–359 is accepted; default **270°**, so the Impact pie starts at 9 o'clock and runs over 12 o'clock towards 3 o'clock.
+- **Pie position option** for cluster, score and slice files (one setting per run):
+  - **Original position** (default): each pie keeps its position from its overview (cluster and slice files: category overview, score files: score overview), so the files can be stacked onto the overview.
+  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge; a slice starts at the start angle. The criterion at index *i* (0, 1, 2 … within the cluster) spans `start + i·15°` to `start + (i+1)·15°`. Any whole number 0–359 is accepted; default **270°**, so the Impact pie starts at 9 o'clock and runs over 12 o'clock towards 3 o'clock.
 - **Moving a criterion**: rotate its wedge and ring paths about the centre from the template span to the target span. In `*-centre` files the category's centre sector and icon are rotated by the same amount, so they stay under their criteria.
 - **Text orientation** (every file, overviews included): take the mid-angle φ of the criterion's span (mod 360).
   - **0° ≤ φ < 180°** (right half): text reads outward, like criterion 1 in the template.
@@ -281,18 +306,61 @@ The centre sectors use the level-5 colour of their category; the icons are centr
 
 ## 8. User interface
 
-One page, in English:
+One page, in English, laid out like an application. The mockup from October 2026 is the visual reference.
 
-- drop zone / file picker for the CSV
-- validation errors and warnings (§4.2)
-- live preview of both overviews and of one individual pie (Impact), updated when options change
-- pie position: **original position** (default) / **start angle**; in the "start angle" mode a number field 0–359° (default 270°) with quick buttons 0° / 90° / 180° / 270°
-- raster size: ×1 (1080 px, default) / ×2 / ×4
-- list of all output files, each with SVG / PNG / JPG download buttons
-- **Download all (ZIP)** button, with a choice of formats (SVG, PNG, JPG; all selected by default)
-- links: example CSV, empty CSV template, short instructions ("open the SVG in Affinity → save as .af")
+**Header bar** (full width):
 
-Accessibility basics: keyboard-usable controls, visible focus, sufficient contrast for UI text.
+- left: the HIIG emblem (`assets/hiig-emblem.svg`: the building and the I/O squares from the HIIG logo, without lettering, in one grey `#55555c` so the attention stays on the graphics; links to https://www.hiig.de/en/), title **Impact AI Assessment Wheel**, subtitle "Turn assessment scores into report-ready graphics · v<version>";
+- right: icon-only links with an `aria-label` and a tooltip that appears below the icon on hover and keyboard focus (positioned absolutely, so nothing moves):
+  - "Project page": https://www.hiig.de/en/project/impact-ai/
+  - "Method repository" (the method documentation on Zenodo): https://doi.org/10.5281/zenodo.23186663
+  - "FAQ": https://www.hiig.de/en/impact-ai-faq/
+  - "Source code": https://github.com/hiig-berlin/impact-ai-assessment
+- far right: **Download all (ZIP)**, disabled until a valid CSV is loaded.
+
+**Two columns** below the header. The left column is about 340–420 px wide; the right column takes the rest. On narrow screens they stack, left column first.
+
+Left column:
+
+1. **Scores CSV** card:
+   - before loading: drop zone with **Choose file…** and **Use example**;
+   - after loading: a status line with the file name, "24 criteria · N scores · K warnings" and **Replace…**;
+   - errors and warnings (§4.2) are listed in this card;
+   - links to the empty CSV template and the example CSV.
+2. **Options** card:
+   - pie position: **Original** (default) / **Start angle**, with a number field 0–359° (default 270°) and quick buttons 0° / 90° / 180° / 270° that are only active in "start angle" mode;
+   - legend: an on/off switch (default off) and position **Left / Right / Top / Bottom** (default bottom; only active when the switch is on). The switch decides whether the overview preview and the single-file downloads of the overviews show the `-legend` version; the ZIP always has both (§5.2);
+   - PNG/JPG size: ×1 (1080 px, default) / ×2 (2160 px) / ×4 (4320 px);
+   - formats in the ZIP: SVG, PNG, JPG (all selected by default).
+3. Short help, headed "Editing the files": "Open the SVG files in a vector graphics program such as Affinity or Illustrator: the layers are named and the text stays editable. To keep working on a graphic later, save it in the program's own format or as SVG."
+
+Right column, the **preview**:
+
+- **Tabs**: Overviews (2), Clusters (5), Scores (the number that occur), Slices (24), each showing its file count.
+- **View switch**: **Grid** (default) / **Gallery**.
+  - Gallery: one large preview, with thumbnails of the current tab's files below. Clicking a thumbnail selects it. The toolbar has a file menu and SVG / PNG / JPG download buttons for the selected file.
+  - Grid: all files of the current tab as cards (preview, title, path). Clicking a card opens it in the gallery. Above the grid, "Download <group> (<n> files)" downloads the current tab as `rating-pie-YYYY-MM-DD-<group>.zip`, with all variants of its files (legend and centre versions) in the selected ZIP formats.
+- **Clusters tab**: a "With centre sector" checkbox switches between `clusters/<category>` and `clusters/<category>-centre`. The full ZIP always has both.
+- **Previews** are framed like the PNG files (square, or extended for the legend), with embedded fonts, on a light checkerboard so transparent areas are visible. They update when options change.
+- **Empty state** before a CSV is loaded: a placeholder in the preview area, and the downloads disabled.
+
+**Visual style**: contemporary and calm, so the graphics stay the focus (see the mockup).
+
+- light neutral page (`#f5f6f7`) with white panels and soft shadows instead of borders;
+- moderate radii for rectangles (12 px panels, 10 px preview stage and tiles, 8 px tracks, 6 px segment thumbs and tabs); buttons, chips, checkboxes, badges and the switch are fully rounded;
+- segmented controls (tabs, pie position, legend position, size, view switch) as a light grey track with a white "thumb" for the selected option;
+- pill-shaped buttons and format chips; tinted (not solid) selected states;
+- the preview on a light dot-grid stage, with a floating bar for the file menu and downloads;
+- a sticky, slightly translucent header.
+
+**Typefaces** (both SIL Open Font License, vendored):
+
+- Instrument Sans for headings, the title, buttons, tabs, control labels and other UI elements;
+- PT Sans for running text (descriptions, help text, status and validation messages), as in the graphics themselves.
+
+**Colours**: primary colour `#007ba3` (the Social Sustainability level-5 blue) for primary buttons, selected states, the active tab, the legend switch and links; `#00617f` for hover. White text on `#007ba3` has a contrast of 4.8 : 1. The other UI colours are neutral greys.
+
+Accessibility basics: keyboard-usable controls, visible focus, sufficient contrast for UI text. Tabs use the ARIA tab pattern (arrow keys move between tabs), the legend switch is `role="switch"`, and icon-only buttons and links have `aria-label`s.
 
 ## 9. Reference data and tests
 
@@ -314,6 +382,7 @@ Expected score order in the score overview, clockwise from 12 o'clock:
 - template check (§7 step 2)
 - CSV parsing: delimiters, quoting, BOM, Windows-1252, empty rows, duplicates, each validation message in §4.2
 - ordering: the expected score order above, gauge placement for start angles 0°, 270° and 7°, text side for each criterion
+- legend position: placement of the legend for each side (§5.2), raster framing for each side, legend only in the two `-legend` overview files
 - file and layer names against the tables in §6.1–§6.3; unique ids in every output
 - **snapshots**: the SVGs generated from `examples/ratings.csv` are compared with `tests/expected/`. The expected files are created once by the first implementation, checked by eye against the hand-checked graphic from October 2026, and committed. Any later change to the output shows up as a diff and is either fixed or approved by replacing the expected file.
 
@@ -329,7 +398,8 @@ names.js          categories, criteria, scores, slugs (the tables in §6.1–§6
 style.css
 template/template.svg                    cleaned template (generated)
 template/ImpactAssessment_Template.svg   original Affinity export (source)
-fonts/            PT Sans Regular + Bold (.woff2), OFL licence
+fonts/            PT Sans Regular + Bold (.woff2) for the graphics, Instrument Sans for the UI; OFL licence
+assets/           HIIG emblem (hiig-emblem.svg)
 examples/ratings.csv
 vendor/           ZIP library (e.g. fflate, pinned version) + its licence
 tests/            index.html, test modules, expected/ snapshots
@@ -358,11 +428,13 @@ SPECS.md
   - an overview in score order matching §9, with a blank centre and separators,
   - both with white outlines, no stray shapes and readable labels on both halves.
 - All snapshot tests in `tests/index.html` pass (§9).
-- In the "original position" mode, cluster and slice files line up with the category overview and score files with the score overview when stacked in Affinity. In the "start angle" mode with 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file.
+- In the "original position" mode, cluster and slice files line up with the category overview and score files with the score overview when stacked in Affinity. In the "start angle" mode with 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file, and every slice starts at 9 o'clock.
 - For any start angle, all labels and numbers are upright (right half reading outward, left half reading inward).
 - A criterion name in the CSV replaces the label in all outputs, positioned correctly on both halves; file names don't change.
 - All SVGs open in Affinity with named layers and editable text in PT Sans.
-- PNG and JPG files are square without legend and extended with legend (§5.1), and show PT Sans correctly, also on a computer without PT Sans installed.
+- PNG and JPG files are square without legend, and A4 portrait (legend top/bottom) or 16:9 landscape (legend left/right) with legend (§5.1, §5.2), and show PT Sans correctly, also on a computer without PT Sans installed.
+- With the legend at left, right, top or bottom, the overview `-legend` files show the legend on that side, next to a pie of unchanged size, with clear space in between.
+- The page works as described in §8: header links and ZIP button, CSV and options on the left, preview with tabs, gallery and grid views on the right; it stacks on a phone-width screen.
 - Every file can be downloaded individually and as part of the ZIP.
 - Invalid CSVs (missing criterion, score `6`, score `4.5`, score `Good`) show a clear error with the row number and produce no download. Empty rows and duplicate rows don't block output.
 - Works in current Chrome, Edge, Firefox and Safari without installation.

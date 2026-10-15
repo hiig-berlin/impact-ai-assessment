@@ -25,6 +25,33 @@ const SAMPLE =
   '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg">' +
   '<text id="t" x="100.000px" y="5px">A</text><path d="M1,2"/></svg>\n';
 
+test('snapshot comparison: legend viewBox/transform within tolerance pass', () => {
+  const svg = (vb, t) =>
+    `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><g id="Legend" transform="${t}"><path d="M1,2"/></g></svg>\n`;
+  const base = svg(
+    '0.000 177.204 2481.000 3508.000',
+    'translate(0.000,238.354) matrix(1,0,0,1,0,0)',
+  );
+  assert(
+    compareSnapshot(
+      base,
+      svg('0.000 177.205 2481.000 3508.000', 'translate(0.000,238.355) matrix(1,0,0,1,0,0)'),
+    ).equal,
+  );
+  assert(
+    !compareSnapshot(
+      base,
+      svg('0.000 179.204 2481.000 3508.000', 'translate(0.000,238.354) matrix(1,0,0,1,0,0)'),
+    ).equal,
+  );
+  assert(
+    !compareSnapshot(
+      base,
+      svg('0.000 177.204 2481.000 3508.000', 'translate(0.000,238.354) matrix(2,0,0,1,0,0)'),
+    ).equal,
+  );
+});
+
 test('snapshot comparison: text x within tolerance passes, anything else fails', () => {
   assert(compareSnapshot(SAMPLE, SAMPLE).equal);
   const shifted = compareSnapshot(SAMPLE, SAMPLE.replace('100.000px', '100.990px'));

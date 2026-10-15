@@ -23,6 +23,17 @@ export const HALF_CIRCLE = 180;
 
 // Square crop around the chart centre for cluster, score and slice files (§5).
 export const CROP = { x: 40.157, y: 272.634, size: 2400 };
+// The template's A4 page (viewBox of template.svg).
+export const PAGE = { width: 2481, height: 3508 };
+// Raster margin around the crop square, as a share of the image side (§5.1).
+export const FRAME_MARGIN_RATIO = 0.05;
+// Legend positions for the two -legend overviews (§5.2).
+export const LEGEND_POSITIONS = ['left', 'right', 'top', 'bottom'];
+export const DEFAULT_LEGEND_POSITION = 'bottom';
+export const WIDE_ASPECT = 16 / 9;
+// Space between the crop square and the legend's bounding box (template units).
+export const LEGEND_GAP = 120;
+const PATH_SAMPLES = 64; // points sampled per path for the legend's bounding box
 
 // Radius of the centre icons' midpoint in their sector (§6).
 export const ICON_RADIUS = 102;
@@ -333,8 +344,23 @@ export async function createMeasurer(template, doc = document) {
   }
   doc.body.append(svg);
 
+  // The template legend's box, for the legend positions (§5.2): measured once
+  // in a full-size copy whose legend texts use the measuring font.
+  const page = doc.importNode(template.root, true);
+  const style = doc.createElementNS(SVG_NS, 'style');
+  style.textContent = `#Legend text { font-family: '${MEASURE_FAMILY}' !important; }`;
+  page.prepend(style);
+  page.setAttribute('width', String(PAGE.width));
+  page.setAttribute('height', String(PAGE.height));
+  page.setAttribute('aria-hidden', 'true');
+  page.style.cssText = 'position:absolute;left:-100000px;top:0;visibility:hidden;';
+  doc.body.append(page);
+  const legendBox = measureLegendBox(page);
+  page.remove();
+
   const cache = new Map();
   return {
+    legendBox,
     measure(content, kind) {
       const key = `${kind}\n${content}`;
       if (!cache.has(key)) {
@@ -441,6 +467,7 @@ export function prepare(template, ratings, measurer) {
   return {
     template,
     doc,
+    legendBox: measurer.legendBox ?? null,
     ratings: [...byNumber.values()].sort((a, b) => a.number - b.number),
     labels,
     widths,
@@ -563,7 +590,21 @@ export function buildDocument(base, spec) {
   else if (spec.centre !== 'all')
     keepCentreSector(base, doc, spec.centre.categoryId, spec.centre.delta);
 
-  if (!spec.legend) doc.getElementById('Legend').remove();
+  const legend = doc.getElementById('Legend');
+  if (!spec.legend) {
+    legend.remove();
+  } else {
+    // Move the legend as a whole; it is otherwise left as it is (§5.2).
+    const { dx, dy, viewBox } = spec.legend;
+    legend.setAttribute(
+      'transform',
+      `translate(${fmt3(dx)},${fmt3(dy)}) ${legend.getAttribute('transform') || ''}`.trim(),
+    );
+    root.setAttribute(
+      'viewBox',
+      [viewBox.x, viewBox.y, viewBox.width, viewBox.height].map(fmt3).join(' '),
+    );
+  }
   if (spec.crop) root.setAttribute('viewBox', `${CROP.x} ${CROP.y} ${CROP.size} ${CROP.size}`);
   return doc;
 }
@@ -611,6 +652,103 @@ export function serialize(doc) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n${serializeElement(doc.documentElement)}\n`;
 }
 
+// --- Legend position (§5.2) ---------------------------------------------------
+
+// The square frame around the crop square: crop plus FRAME_MARGIN_RATIO of the frame side on each side.
+export function squareFrame() {
+  const side = CROP.size / (1 - 2 * FRAME_MARGIN_RATIO);
+  const margin = (side - CROP.size) / 2;
+  return { x: CROP.x - margin, y: CROP.y - margin, width: side, height: side, margin };
+}
+
+/**
+ * Where the legend goes and which page it gets (§5.2).
+ * @param {{x,y,width,height}} box the legend's tight bounding box in the template
+ * @param {string} position 'left' | 'right' | 'top' | 'bottom'
+ * @returns {{ position, shape: 'a4'|'wide', dx, dy, box, viewBox: {x,y,width,height} }}
+ */
+export function legendLayout(box, position = DEFAULT_LEGEND_POSITION) {
+  if (!LEGEND_POSITIONS.includes(position)) {
+    throw new Error(`legendLayout: unknown legend position "${position}".`);
+  }
+  if (!box) throw new Error('legendLayout: the legend box is needed (measureLegendBox).');
+  const crop = { left: CROP.x, top: CROP.y, right: CROP.x + CROP.size, bottom: CROP.y + CROP.size };
+  // LEGEND_GAP away from the crop square; aligned to the end the template uses
+  // (right edge for top/bottom, bottom edge for left/right), keeping its inset.
+  const inset = crop.right - (box.x + box.width);
+  let { x, y } = box;
+  if (position === 'bottom') y = crop.bottom + LEGEND_GAP;
+  else if (position === 'top') y = crop.top - LEGEND_GAP - box.height;
+  else {
+    y = crop.bottom - inset - box.height;
+    x = position === 'right' ? crop.right + LEGEND_GAP : crop.left - LEGEND_GAP - box.width;
+  }
+  const moved = { x, y, width: box.width, height: box.height };
+  const a4 = position === 'top' || position === 'bottom';
+  let viewBox;
+  if (a4) {
+    // A4 page: the chart keeps its horizontal position; chart and legend are
+    // centred vertically as one block.
+    const top = Math.min(crop.top, moved.y);
+    const bottom = Math.max(crop.bottom, moved.y + moved.height);
+    viewBox = {
+      x: 0,
+      y: (top + bottom) / 2 - PAGE.height / 2,
+      width: PAGE.width,
+      height: PAGE.height,
+    };
+  } else {
+    // 16:9 page: the square frame's height; chart and legend centred as one group.
+    const frame = squareFrame();
+    const width = frame.height * WIDE_ASPECT;
+    const left = Math.min(crop.left, moved.x);
+    const right = Math.max(crop.right, moved.x + moved.width);
+    viewBox = { x: (left + right) / 2 - width / 2, y: frame.y, width, height: frame.height };
+  }
+  return {
+    position,
+    shape: a4 ? 'a4' : 'wide',
+    dx: moved.x - box.x,
+    dy: moved.y - box.y,
+    box: moved,
+    viewBox,
+  };
+}
+
+/**
+ * Tight bounding box of the #Legend group of an attached SVG, in the SVG's user
+ * units: paths are sampled along their length, texts use their boxes. (The
+ * browser's own boxes are far too loose because of the legend's nested rotations.)
+ */
+export function measureLegendBox(svg) {
+  const rootInverse = svg.getScreenCTM().inverse();
+  const box = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+  const addPoint = (x, y, matrix) => {
+    const p = new DOMPoint(x, y).matrixTransform(matrix);
+    box.left = Math.min(box.left, p.x);
+    box.top = Math.min(box.top, p.y);
+    box.right = Math.max(box.right, p.x);
+    box.bottom = Math.max(box.bottom, p.y);
+  };
+  for (const el of svg.querySelectorAll('#Legend path, #Legend text')) {
+    const matrix = rootInverse.multiply(el.getScreenCTM());
+    if (el.localName === 'path') {
+      const length = el.getTotalLength();
+      for (let i = 0; i <= PATH_SAMPLES; i++) {
+        const p = el.getPointAtLength((length * i) / PATH_SAMPLES);
+        addPoint(p.x, p.y, matrix);
+      }
+    } else {
+      const b = el.getBBox();
+      addPoint(b.x, b.y, matrix);
+      addPoint(b.x + b.width, b.y, matrix);
+      addPoint(b.x, b.y + b.height, matrix);
+      addPoint(b.x + b.width, b.y + b.height, matrix);
+    }
+  }
+  return { x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top };
+}
+
 // --- Output files (§5) --------------------------------------------------------
 
 function categoryOrderGroups(base, angleOf, numbers = null) {
@@ -647,6 +785,9 @@ export const DEFAULT_START_ANGLE = 270;
  * @param {object} [options]
  * @param {'original'|'start'} [options.piePosition] cluster and score files (§7.1)
  * @param {number} [options.startAngle] whole number 0–359, for 'start'
+ * @param {string} [options.legendPosition] 'left' | 'right' | 'top' | 'bottom' (default)
+ * @param {object} [options.legendBox] the template legend's bounding box; defaults to the
+ *   one the measurer found (base.legendBox)
  */
 export function generateFiles(base, options = {}) {
   const piePosition = options.piePosition ?? PIE_POSITION.original;
@@ -658,6 +799,10 @@ export function generateFiles(base, options = {}) {
     throw new Error(`generateFiles: start angle must be a whole number 0–359, got ${startAngle}.`);
   }
   const ownLayout = piePosition === PIE_POSITION.start;
+  const layout = legendLayout(
+    options.legendBox ?? base.legendBox,
+    options.legendPosition ?? DEFAULT_LEGEND_POSITION,
+  );
 
   const files = [];
   const add = (path, kind, name, spec) =>
@@ -666,6 +811,7 @@ export function generateFiles(base, options = {}) {
       kind,
       name,
       legend: Boolean(spec.legend),
+      layout: spec.legend || null,
       svg: serialize(buildDocument(base, spec)),
     });
 
@@ -675,7 +821,7 @@ export function generateFiles(base, options = {}) {
     add(legend ? 'overview-legend.svg' : 'overview.svg', 'overview', 'Overview', {
       groups: categoryGroups,
       centre: 'all',
-      legend,
+      legend: legend ? layout : null,
     });
   }
 
@@ -690,7 +836,7 @@ export function generateFiles(base, options = {}) {
       {
         groups: scoreGroups,
         centre: null,
-        legend,
+        legend: legend ? layout : null,
         separators,
       },
     );
@@ -719,10 +865,11 @@ export function generateFiles(base, options = {}) {
     });
   }
 
-  // Slices always keep their category-overview position.
+  // Slices: their category-overview position, or the start angle (§7.1).
   for (const c of CRITERIA) {
+    const angleOf = ownLayout ? () => startAngle : templateAngle;
     add(`slices/${c.slug}.svg`, 'slice', criterionLayerName(c.number, base.labels.get(c.number)), {
-      groups: categoryOrderGroups(base, templateAngle, [c.number]),
+      groups: categoryOrderGroups(base, angleOf, [c.number]),
       crop: true,
     });
   }

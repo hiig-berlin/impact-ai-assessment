@@ -2,8 +2,9 @@
 
 import { Zip, ZipDeflate, ZipPassThrough, strToU8 } from './vendor/fflate-0.8.2/fflate.js';
 import { formatMessage, readRatings } from './csv.js';
-import { CRITERIA } from './names.js';
+import { CATEGORIES, CRITERIA, SCORES } from './names.js';
 import {
+  DEFAULT_LEGEND_POSITION,
   DEFAULT_START_ANGLE,
   LABEL_MAX_WIDTH,
   PIE_POSITION,
@@ -11,34 +12,41 @@ import {
   generateFiles,
   loadTemplate,
   prepare,
+  serialize,
 } from './pie.js';
 import { FORMATS, measureLegend, rasterFrame, rasterSvg, renderRaster } from './raster.js';
 
 const EXAMPLE_CSV_URL = 'examples/ratings.csv';
 const INPUT_FILE_NAME = 'ratings.csv';
+const ZIP_PREFIX = 'rating-pie';
 const OPTION_DELAY_MS = 150; // debounce for typing in the start angle field
-const PREVIEW_FILES = [
-  { path: 'overview.svg', caption: 'Overview (category order)' },
-  { path: 'overview-scores.svg', caption: 'Overview (score order)' },
-  { path: 'clusters/impact.svg', caption: 'Impact pie' },
-];
-const FILE_GROUPS = [
-  { kind: 'overview', title: 'Overviews' },
-  { kind: 'cluster', title: 'Category clusters' },
-  { kind: 'score', title: 'Score clusters' },
-  { kind: 'slice', title: 'Slices' },
+const TOAST_MS = 4000;
+
+// Tabs of the preview (§8): which files each shows, and their titles.
+const TABS = [
+  { id: 'overviews', label: 'Overviews', zipName: 'overviews' },
+  { id: 'clusters', label: 'Clusters', zipName: 'clusters' },
+  { id: 'scores', label: 'Scores', zipName: 'scores' },
+  { id: 'slices', label: 'Slices', zipName: 'slices' },
 ];
 
 const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 const state = {
   template: null,
   measurer: null,
+  legendBox: null, // the template legend's bounding box, measured once
   csvBytes: null, // the loaded CSV, for ratings.csv in the ZIP
   ratings: null, // valid ratings, or null if there are errors
   files: [], // generated files from pie.js
-  legendBox: undefined, // measured once (the legend never changes)
-  previewUrls: [],
+  previews: new Map(), // file path → object URL of its framed preview SVG
+  generation: 0, // increases with every regenerate(), so stale previews are dropped
+  tab: 'overviews',
+  view: 'grid',
+  selected: {}, // tab id → selected item index
+  legendOn: false,
+  centre: false,
   busy: false,
 };
 
@@ -60,13 +68,9 @@ function downloadBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-function baseName(path) {
-  return path.split('/').pop();
-}
-
-function withExtension(path, extension) {
-  return path.replace(/\.svg$/, `.${extension}`);
-}
+const baseName = (path) => path.split('/').pop();
+const withExtension = (path, extension) => path.replace(/\.svg$/, `.${extension}`);
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 function today() {
   const d = new Date();
@@ -81,29 +85,46 @@ function showAppError(error) {
   box.hidden = false;
 }
 
+let toastTimer = 0;
+
+function toast(text, { sticky = false } = {}) {
+  const box = $('#status');
+  clearTimeout(toastTimer);
+  box.textContent = text;
+  box.hidden = false;
+  if (!sticky) toastTimer = setTimeout(() => (box.hidden = true), TOAST_MS);
+}
+
 // --- Options ----------------------------------------------------------------------
 
 function readOptions() {
-  const piePosition = document.querySelector('input[name="pie-position"]:checked').value;
-  const scale = Number(document.querySelector('input[name="scale"]:checked').value);
+  const piePosition = $('input[name="pie-position"]:checked').value;
+  const useStart = piePosition === PIE_POSITION.start;
   const field = $('#start-angle');
   const text = field.value.trim();
   const startAngle = /^\d+$/.test(text) ? Number(text) : NaN;
   const angleValid = startAngle >= 0 && startAngle <= 359;
-  const useStart = piePosition === PIE_POSITION.start;
-  $('#start-angle-controls').hidden = !useStart;
+
+  // The angle controls are only active in "start angle" mode.
+  field.disabled = !useStart;
+  $$('[data-angle]').forEach((button) => (button.disabled = !useStart));
+  $('#start-angle-row').setAttribute('aria-disabled', String(!useStart));
   field.setAttribute('aria-invalid', String(useStart && !angleValid));
   $('#start-angle-error').hidden = !useStart || angleValid;
+
   return {
     valid: !useStart || angleValid,
-    generator: { piePosition, startAngle: angleValid ? startAngle : DEFAULT_START_ANGLE },
-    scale,
+    generator: {
+      piePosition,
+      startAngle: angleValid ? startAngle : DEFAULT_START_ANGLE,
+      legendPosition: $('input[name="legend-position"]:checked')?.value ?? DEFAULT_LEGEND_POSITION,
+      legendBox: state.legendBox,
+    },
+    scale: Number($('input[name="scale"]:checked').value),
   };
 }
 
-function zipFormats() {
-  return [...document.querySelectorAll('input[name="zip-format"]:checked')].map((el) => el.value);
-}
+const zipFormats = () => $$('input[name="zip-format"]:checked').map((el) => el.value);
 
 // --- CSV --------------------------------------------------------------------------
 
@@ -111,7 +132,7 @@ function renderMessages(result) {
   const container = $('#messages');
   container.replaceChildren();
   for (const [level, list, title] of [
-    ['error', result.errors, 'The CSV has errors – nothing can be generated until they are fixed:'],
+    ['error', result.errors, 'Please fix these errors in the CSV:'],
     ['warning', result.warnings, 'Warnings:'],
   ]) {
     if (!list.length) continue;
@@ -127,6 +148,25 @@ function renderMessages(result) {
   }
 }
 
+function renderFileCard(fileName, result) {
+  $('#dropzone').hidden = true;
+  $('#file-card').hidden = false;
+  $('#file-name').textContent = fileName;
+  const dot = $('#file-dot');
+  dot.className = 'file-dot';
+  let meta;
+  if (result.errors.length) {
+    dot.classList.add('error');
+    meta = plural(result.errors.length, 'error');
+  } else {
+    const scores = new Set(result.ratings.map((r) => r.score)).size;
+    meta = `${result.ratings.length} criteria · ${plural(scores, 'score')} · `;
+    meta += result.warnings.length ? plural(result.warnings.length, 'warning') : 'no warnings';
+    if (result.warnings.length) dot.classList.add('warning');
+  }
+  $('#file-meta').textContent = meta;
+}
+
 async function loadCsv(bytes, fileName) {
   await ready;
   if (!state.measurer) return; // initialisation failed; the error is shown
@@ -136,13 +176,7 @@ async function loadCsv(bytes, fileName) {
     maxLabelWidth: LABEL_MAX_WIDTH,
   });
   renderMessages(result);
-  const summary = result.errors.length
-    ? `${result.errors.length} error${result.errors.length > 1 ? 's' : ''}`
-    : `${result.ratings.length} criteria` +
-      (result.warnings.length
-        ? `, ${result.warnings.length} warning${result.warnings.length > 1 ? 's' : ''}`
-        : '');
-  $('#file-status').textContent = `Loaded “${fileName}”: ${summary}.`;
+  renderFileCard(fileName, result);
   state.ratings = result.errors.length ? null : result.ratings;
   await regenerate();
 }
@@ -164,7 +198,7 @@ function emptyTemplateCsv() {
   return new Blob(['﻿' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
 }
 
-// --- Generation and preview ------------------------------------------------------------
+// --- Generation ---------------------------------------------------------------------
 
 let regenerateTimer = 0;
 
@@ -175,148 +209,243 @@ function scheduleRegenerate() {
 
 async function regenerate() {
   const options = readOptions();
-  if (!state.busy) $('#zip-status').textContent = '';
   if (!state.ratings) {
-    state.files = [];
-    renderFileList();
-    renderPreview();
+    setFiles([]);
     return;
   }
   if (!options.valid) return; // keep the last valid output while the angle is being fixed
   const base = prepare(state.template, state.ratings, state.measurer);
-  state.files = generateFiles(base, options.generator);
-  if (state.legendBox === undefined) {
-    state.legendBox = await measureLegend(state.files.find((f) => f.legend).svg);
-  }
-  renderFileList();
-  await renderPreview();
+  setFiles(generateFiles(base, options.generator));
 }
 
-async function renderPreview() {
-  const container = $('#preview');
-  state.previewUrls.forEach((url) => URL.revokeObjectURL(url));
-  state.previewUrls = [];
-  if (!state.files.length) {
-    container.replaceChildren(
-      element('p', { class: 'placeholder' }, 'Load a valid CSV to see the preview.'),
-    );
-    return;
+function setFiles(files) {
+  state.files = files;
+  state.generation++;
+  for (const url of state.previews.values()) URL.revokeObjectURL(url);
+  state.previews.clear();
+  $('#download-all').disabled = !files.length || state.busy;
+  render();
+}
+
+const fileAt = (path) => state.files.find((f) => f.path === path);
+
+// Items of a tab: title, short label and the file shown for the current switches.
+// `files` lists every file of the item (for the tab's ZIP).
+function tabItems(tabId) {
+  if (tabId === 'overviews') {
+    return [
+      ['Category order', 'Categories', 'overview'],
+      ['Score order', 'Scores', 'overview-scores'],
+    ].map(([title, short, stem]) => ({
+      title,
+      short,
+      file: fileAt(`${stem}${state.legendOn ? '-legend' : ''}.svg`),
+      files: [fileAt(`${stem}.svg`), fileAt(`${stem}-legend.svg`)],
+    }));
   }
-  // Shown like the PNG files: square frame, embedded fonts.
-  const frame = rasterFrame(1);
-  const figures = await Promise.all(
-    PREVIEW_FILES.map(async ({ path, caption }) => {
-      const file = state.files.find((f) => f.path === path);
-      const svg = await rasterSvg(file.svg, frame);
-      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
-      state.previewUrls.push(url);
-      const figure = element('figure');
-      figure.append(
-        element('img', { src: url, alt: `Preview of ${path}` }),
-        element('figcaption', {}, caption),
-      );
-      return figure;
+  if (tabId === 'clusters') {
+    return CATEGORIES.map((c) => ({
+      title: c.name,
+      short: c.name.split(' ')[0],
+      file: fileAt(`clusters/${c.slug}${state.centre ? '-centre' : ''}.svg`),
+      files: [fileAt(`clusters/${c.slug}.svg`), fileAt(`clusters/${c.slug}-centre.svg`)],
+    }));
+  }
+  if (tabId === 'scores') {
+    return SCORES.map((s) => ({ s, file: fileAt(`scores/${s.slug}.svg`) }))
+      .filter(({ file }) => file)
+      .map(({ s, file }) => ({ title: s.name, short: s.name, file, files: [file] }));
+  }
+  return CRITERIA.map((c) => {
+    const file = fileAt(`slices/${c.slug}.svg`);
+    return { title: file.name, short: String(c.number).padStart(2, '0'), file, files: [file] };
+  });
+}
+
+// Object URL of a file's preview: framed like its PNG, with embedded fonts.
+async function previewUrl(file) {
+  if (state.previews.has(file.path)) return state.previews.get(file.path);
+  const generation = state.generation;
+  const svg = await rasterSvg(file.svg, rasterFrame(1, file.layout));
+  if (generation !== state.generation) return null; // outdated by a newer generation
+  if (!state.previews.has(file.path)) {
+    state.previews.set(file.path, URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' })));
+  }
+  return state.previews.get(file.path);
+}
+
+function setImage(img, file) {
+  img.dataset.path = file.path;
+  previewUrl(file)
+    .then((url) => {
+      if (url && img.dataset.path === file.path) img.src = url;
+    })
+    .catch(showAppError);
+}
+
+// --- Rendering the preview ------------------------------------------------------------
+
+function render() {
+  renderTabs();
+  const loaded = state.files.length > 0;
+  $('#preview-empty').hidden = loaded;
+  $('#gallery').hidden = !loaded || state.view !== 'gallery';
+  $('#grid').hidden = !loaded || state.view !== 'grid';
+  $('#centre-option').hidden = !loaded || state.tab !== 'clusters';
+  $('#tabs').setAttribute('aria-disabled', String(!loaded));
+  if (!loaded) return;
+  if (state.view === 'gallery') renderGallery();
+  else renderGrid();
+}
+
+function renderTabs() {
+  const loaded = state.files.length > 0;
+  const tabs = TABS.map((tab) => {
+    const selected = tab.id === state.tab;
+    const button = element('button', {
+      type: 'button',
+      class: 'tab',
+      role: 'tab',
+      id: `tab-${tab.id}`,
+      'aria-selected': String(selected),
+      'aria-controls': 'preview-panel',
+      tabindex: selected ? '0' : '-1',
+    });
+    button.append(tab.label);
+    if (loaded) {
+      button.append(' ', element('span', { class: 'count' }, String(tabItems(tab.id).length)));
+    }
+    button.addEventListener('click', () => selectTab(tab.id));
+    return button;
+  });
+  $('#tabs').replaceChildren(...tabs);
+  $('#preview-panel').setAttribute('aria-labelledby', `tab-${state.tab}`);
+}
+
+function selectTab(id, focus = false) {
+  state.tab = id;
+  render();
+  if (focus) $(`#tab-${id}`).focus();
+}
+
+function selectedIndex(items) {
+  return Math.min(state.selected[state.tab] ?? 0, items.length - 1);
+}
+
+function select(index, { view } = {}) {
+  state.selected[state.tab] = index;
+  if (view) state.view = view;
+  $(`input[name="view"][value="${state.view}"]`).checked = true;
+  render();
+}
+
+function renderGallery() {
+  const items = tabItems(state.tab);
+  const index = selectedIndex(items);
+  const current = items[index];
+
+  const main = $('#main-preview');
+  main.alt = `Preview of ${current.file.path}`;
+  main.classList.toggle('wide', current.file.layout?.shape === 'wide');
+  setImage(main, current.file);
+
+  $('#file-select').replaceChildren(
+    ...items.map((item, i) => {
+      const option = element('option', { value: String(i) }, item.file.path);
+      option.selected = i === index;
+      return option;
     }),
   );
-  container.replaceChildren(...figures);
+
+  const thumbs = items.map((item, i) => {
+    const button = element('button', {
+      type: 'button',
+      class: 'thumb',
+      role: 'option',
+      'aria-selected': String(i === index),
+      'aria-label': item.file.path,
+      title: item.title,
+    });
+    const img = element('img', { alt: '' });
+    setImage(img, item.file);
+    button.append(img, element('span', {}, item.short));
+    button.addEventListener('click', () => select(i));
+    return button;
+  });
+  $('#thumbs').replaceChildren(...thumbs);
+}
+
+function renderGrid() {
+  const items = tabItems(state.tab);
+  const tab = TABS.find((t) => t.id === state.tab);
+  const fileCount = items.flatMap((item) => item.files).length;
+  $('#grid-caption').textContent =
+    `${plural(items.length, 'graphic')} · click one to open it in the gallery`;
+  $('#download-group-label').textContent = `Download ${tab.zipName} (${plural(fileCount, 'file')})`;
+  $('#tiles').classList.toggle('two', items.length <= 2);
+  const tiles = items.map((item, i) => {
+    const button = element('button', {
+      type: 'button',
+      class: 'tile',
+      'aria-label': `Open ${item.file.path} in the gallery`,
+    });
+    const img = element('img', { alt: '' });
+    setImage(img, item.file);
+    button.append(
+      img,
+      element('span', { class: 'tile-title' }, item.title),
+      element('span', { class: 'tile-path' }, item.file.path),
+    );
+    button.addEventListener('click', () => select(i, { view: 'gallery' }));
+    return button;
+  });
+  $('#tiles').replaceChildren(...tiles);
 }
 
 // --- Downloads ----------------------------------------------------------------------
 
 async function fileBlob(file, format, scale) {
   if (format === 'svg') return new Blob([file.svg], { type: 'image/svg+xml' });
-  return renderRaster(file.svg, { format, scale, legendBox: file.legend ? state.legendBox : null });
+  return renderRaster(file.svg, { format, scale, layout: file.layout });
 }
 
-async function downloadSingle(file, format, button) {
-  if (state.busy) return;
-  const { scale } = readOptions();
-  button.disabled = true;
+const pathFor = (file, format) =>
+  format === 'svg' ? file.path : withExtension(file.path, FORMATS[format].extension);
+
+function setBusy(busy) {
+  state.busy = busy;
+  $('#download-all').disabled = busy || !state.files.length;
+  $('#download-group').disabled = busy;
+  $$('[data-download]').forEach((button) => (button.disabled = busy));
+}
+
+async function downloadCurrent(format) {
+  if (state.busy || !state.files.length) return;
+  const items = tabItems(state.tab);
+  const file = items[selectedIndex(items)].file;
+  setBusy(true);
   try {
-    const blob = await fileBlob(file, format, scale);
-    downloadBlob(
-      blob,
-      baseName(format === 'svg' ? file.path : withExtension(file.path, FORMATS[format].extension)),
-    );
+    const blob = await fileBlob(file, format, readOptions().scale);
+    downloadBlob(blob, baseName(pathFor(file, format)));
   } catch (error) {
     showAppError(error);
   } finally {
-    button.disabled = false;
+    setBusy(false);
   }
-}
-
-function renderFileList() {
-  const container = $('#file-list');
-  $('#download-zip').disabled = !state.files.length || state.busy;
-  if (!state.files.length) {
-    container.replaceChildren(
-      element('p', { class: 'placeholder' }, 'Load a valid CSV to see the files.'),
-    );
-    return;
-  }
-  const table = element('table');
-  for (const group of FILE_GROUPS) {
-    const tbody = element('tbody');
-    const head = element('tr');
-    head.append(element('th', { scope: 'rowgroup', colspan: '2' }, group.title));
-    tbody.append(head);
-    for (const file of state.files.filter((f) => f.kind === group.kind)) {
-      const row = element('tr');
-      row.append(element('td', { class: 'path' }, file.path));
-      const actions = element('td', { class: 'actions' });
-      for (const format of ['svg', 'png', 'jpg']) {
-        const button = element(
-          'button',
-          {
-            type: 'button',
-            class: 'button small',
-            'aria-label': `Download ${withExtension(file.path, format)}`,
-          },
-          format.toUpperCase(),
-        );
-        button.addEventListener('click', () => downloadSingle(file, format, button));
-        actions.append(button);
-      }
-      row.append(actions);
-      tbody.append(row);
-    }
-    table.append(tbody);
-  }
-  const input = element('tbody');
-  const inputHead = element('tr');
-  inputHead.append(element('th', { scope: 'rowgroup', colspan: '2' }, 'Input'));
-  const inputRow = element('tr');
-  inputRow.append(element('td', { class: 'path' }, INPUT_FILE_NAME));
-  const actions = element('td', { class: 'actions' });
-  const button = element(
-    'button',
-    { type: 'button', class: 'button small', 'aria-label': 'Download ratings.csv' },
-    'CSV',
-  );
-  button.addEventListener('click', () =>
-    downloadBlob(new Blob([state.csvBytes], { type: 'text/csv' }), INPUT_FILE_NAME),
-  );
-  actions.append(button);
-  inputRow.append(actions);
-  input.append(inputHead, inputRow);
-  table.append(input);
-  container.replaceChildren(table);
 }
 
 // ZIP with the same folder structure; raster files are created one after
 // another and released after compression (§5.1 "Memory").
-async function downloadZip() {
+async function downloadZip(files, name, { withInput }) {
+  if (state.busy || !state.files.length || !files.length) return;
   const formats = zipFormats();
-  const status = $('#zip-status');
   if (!formats.length) {
-    status.textContent = 'Select at least one format.';
+    toast('Select at least one format under Options.');
     return;
   }
   const { scale } = readOptions();
-  const files = state.files;
-  const total = files.length * formats.length + 1;
-  state.busy = true;
-  $('#download-zip').disabled = true;
+  const total = files.length * formats.length + (withInput ? 1 : 0);
+  setBusy(true);
   try {
     const chunks = [];
     let finish;
@@ -337,53 +466,82 @@ async function downloadZip() {
     for (const format of formats) {
       for (const file of files) {
         count++;
-        status.textContent = `Creating file ${count} of ${total}…`;
-        const path =
-          format === 'svg' ? file.path : withExtension(file.path, FORMATS[format].extension);
+        toast(`Preparing ${count} of ${total} files…`, { sticky: true });
         if (format === 'svg') {
-          add(path, strToU8(file.svg), true);
+          add(file.path, strToU8(file.svg), true);
         } else {
           const blob = await fileBlob(file, format, scale);
-          add(path, new Uint8Array(await blob.arrayBuffer()), false);
+          add(pathFor(file, format), new Uint8Array(await blob.arrayBuffer()), false);
         }
       }
     }
-    add(INPUT_FILE_NAME, state.csvBytes, true);
+    if (withInput) add(INPUT_FILE_NAME, state.csvBytes, true);
     zip.end();
     await done;
-    const name = `rating-pie-${today()}.zip`;
     downloadBlob(new Blob(chunks, { type: 'application/zip' }), name);
-    status.textContent = `${name} is ready (${total} files).`;
+    toast(`${name} is ready (${plural(total, 'file')}).`);
   } catch (error) {
-    status.textContent = 'The ZIP could not be created.';
+    toast('The ZIP could not be created.');
     showAppError(error);
   } finally {
-    state.busy = false;
-    $('#download-zip').disabled = !state.files.length;
+    setBusy(false);
   }
+}
+
+function downloadAll() {
+  return downloadZip(state.files, `${ZIP_PREFIX}-${today()}.zip`, { withInput: true });
+}
+
+function downloadGroup() {
+  const tab = TABS.find((t) => t.id === state.tab);
+  const files = tabItems(state.tab).flatMap((item) => item.files);
+  return downloadZip(files, `${ZIP_PREFIX}-${today()}-${tab.zipName}.zip`, { withInput: false });
 }
 
 // --- Events -----------------------------------------------------------------------
 
+function setUpDrop() {
+  // Dropping a file anywhere shouldn't navigate away from the page.
+  for (const type of ['dragover', 'drop']) {
+    window.addEventListener(type, (event) => event.preventDefault());
+  }
+  for (const zone of [$('#dropzone'), $('#file-card')]) {
+    zone.addEventListener('dragover', () => zone.classList.add('dragging'));
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+    zone.addEventListener('drop', (event) => {
+      zone.classList.remove('dragging');
+      loadFile(event.dataTransfer.files[0]);
+    });
+  }
+}
+
+function setUpTabsKeyboard() {
+  // ARIA tab pattern: arrow keys, Home and End move between tabs.
+  $('#tabs').addEventListener('keydown', (event) => {
+    const index = TABS.findIndex((t) => t.id === state.tab);
+    const last = TABS.length - 1;
+    const next = {
+      ArrowRight: index === last ? 0 : index + 1,
+      ArrowLeft: index === 0 ? last : index - 1,
+      Home: 0,
+      End: last,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    selectTab(TABS[next].id, true);
+  });
+}
+
 function setUpEvents() {
-  const dropzone = $('#dropzone');
   $('#csv-input').addEventListener('change', (event) => {
     loadFile(event.target.files[0]);
     event.target.value = ''; // allow loading the same file again
   });
-  // Dropping a file anywhere shouldn't navigate away from the page.
-  for (const type of ['dragover', 'drop'])
-    window.addEventListener(type, (event) => event.preventDefault());
-  dropzone.addEventListener('dragover', () => dropzone.classList.add('dragging'));
-  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragging'));
-  dropzone.addEventListener('drop', (event) => {
-    dropzone.classList.remove('dragging');
-    loadFile(event.dataTransfer.files[0]);
-  });
+  setUpDrop();
   $('#use-example').addEventListener('click', async () => {
     try {
       const response = await fetch(EXAMPLE_CSV_URL);
-      await loadCsv(new Uint8Array(await response.arrayBuffer()), 'examples/ratings.csv');
+      await loadCsv(new Uint8Array(await response.arrayBuffer()), 'Example scores');
     } catch (error) {
       showAppError(error);
     }
@@ -391,31 +549,73 @@ function setUpEvents() {
   $('#download-template-csv').addEventListener('click', () =>
     downloadBlob(emptyTemplateCsv(), 'ratings-template.csv'),
   );
-  for (const input of document.querySelectorAll('input[name="pie-position"]')) {
-    input.addEventListener('change', scheduleRegenerate);
-  }
+
+  $$('input[name="pie-position"]').forEach((input) =>
+    input.addEventListener('change', scheduleRegenerate),
+  );
   $('#start-angle').addEventListener('input', scheduleRegenerate);
-  for (const button of document.querySelectorAll('[data-angle]')) {
+  $$('[data-angle]').forEach((button) =>
     button.addEventListener('click', () => {
       $('#start-angle').value = button.dataset.angle;
       scheduleRegenerate();
-    });
-  }
-  for (const input of document.querySelectorAll('input[name="scale"]')) {
-    input.addEventListener('change', readOptions);
-  }
-  $('#download-zip').addEventListener('click', downloadZip);
+    }),
+  );
+
+  $('#legend-switch').addEventListener('click', () => {
+    state.legendOn = !state.legendOn;
+    $('#legend-switch').setAttribute('aria-checked', String(state.legendOn));
+    $('#legend-positions').disabled = !state.legendOn;
+    render();
+  });
+  $$('input[name="legend-position"]').forEach((input) =>
+    input.addEventListener('change', scheduleRegenerate),
+  );
+
+  $('#centre-toggle').addEventListener('change', (event) => {
+    state.centre = event.target.checked;
+    render();
+  });
+  $$('input[name="view"]').forEach((input) =>
+    input.addEventListener('change', () => {
+      state.view = input.value;
+      render();
+    }),
+  );
+  setUpTabsKeyboard();
+  $('#file-select').addEventListener('change', (event) => select(Number(event.target.value)));
+  $$('[data-download]').forEach((button) =>
+    button.addEventListener('click', () => downloadCurrent(button.dataset.download)),
+  );
+  $('#download-group').addEventListener('click', downloadGroup);
+  $('#download-all').addEventListener('click', downloadAll);
+}
+
+// Firefox restores form controls (checked, disabled) when the page is reloaded,
+// so bring every control in line with the app's state before anything else.
+function syncControls() {
+  state.view = $('input[name="view"]:checked')?.value ?? state.view;
+  state.centre = $('#centre-toggle').checked;
+  $('#legend-switch').setAttribute('aria-checked', String(state.legendOn));
+  $('#legend-positions').disabled = !state.legendOn;
+  $('#download-all').disabled = true; // until a CSV without errors is loaded
+  $('#download-group').disabled = false;
+  $$('[data-download]').forEach((button) => (button.disabled = false));
 }
 
 async function init() {
+  syncControls();
   setUpEvents();
   readOptions();
+  render();
   try {
     state.template = await loadTemplate();
     state.measurer = await createMeasurer(state.template);
+    // The legend never changes: measure it once for the legend positions (§5.2).
+    state.legendBox = await measureLegend(serialize(state.template.doc));
   } catch (error) {
     showAppError(error);
-    for (const el of document.querySelectorAll('#csv-input, #use-example')) el.disabled = true;
+    $('#use-example').disabled = true;
+    $('#csv-input').disabled = true;
   }
 }
 

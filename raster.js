@@ -1,11 +1,10 @@
 // PNG/JPG rendering of the generated SVGs (SPECS.md §5.1): framing, font
 // embedding and 72 dpi metadata. No UI code.
 
-import { CROP, FONT_URLS, SVG_NS, serializeElement } from './pie.js';
+import { FONT_URLS, SVG_NS, measureLegendBox, serializeElement, squareFrame } from './pie.js';
 
 export const RASTER_SIDE = 1080; // px, square side at ×1
 export const RASTER_SCALES = [1, 2, 4];
-export const RASTER_MARGIN = 0.05; // of the square side, on each side
 export const JPEG_QUALITY = 0.92;
 export const DPI = 72;
 export const FORMATS = {
@@ -14,7 +13,6 @@ export const FORMATS = {
 };
 
 const FONT_FAMILY = 'PT Sans';
-const PATH_SAMPLES = 64; // points sampled per path for the legend's bounding box
 const INCHES_PER_METRE = 39.3701;
 
 // --- Fonts ----------------------------------------------------------------------
@@ -84,61 +82,33 @@ export async function measureLegend(svgText, doc = document) {
     await doc.fonts.load(`700 40px '${FONT_FAMILY}'`);
     await doc.fonts.load(`400 40px '${FONT_FAMILY}'`);
     await doc.fonts.ready;
-    // Element coordinates → root user units.
-    const rootInverse = svg.getScreenCTM().inverse();
-    const box = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
-    const addPoint = (point, matrix) => {
-      const p = new DOMPoint(point.x, point.y).matrixTransform(matrix);
-      box.left = Math.min(box.left, p.x);
-      box.top = Math.min(box.top, p.y);
-      box.right = Math.max(box.right, p.x);
-      box.bottom = Math.max(box.bottom, p.y);
-    };
-    for (const el of svg.querySelectorAll('#Legend path, #Legend text')) {
-      const matrix = rootInverse.multiply(el.getScreenCTM());
-      if (el.localName === 'path') {
-        const length = el.getTotalLength();
-        for (let i = 0; i <= PATH_SAMPLES; i++)
-          addPoint(el.getPointAtLength((length * i) / PATH_SAMPLES), matrix);
-      } else {
-        const b = el.getBBox();
-        for (const [px, py] of [
-          [b.x, b.y],
-          [b.x + b.width, b.y],
-          [b.x, b.y + b.height],
-          [b.x + b.width, b.y + b.height],
-        ]) {
-          addPoint({ x: px, y: py }, matrix);
-        }
-      }
-    }
-    return { x: box.left, y: box.top, width: box.right - box.left, height: box.bottom - box.top };
+    return measureLegendBox(svg);
   } finally {
     svg.remove();
   }
 }
 
 /**
- * Raster frame (§5.1): the square crop plus a 5 % margin fills a square of
- * 1080 × scale px; with a legend the frame is extended to the right and
- * downwards to fit the legend box plus the same margin.
+ * Raster frame (§5.1, §5.2). Without legend: the square frame (crop square plus
+ * 5 % margin) at 1080 × scale px. With legend: the page shape of its layout –
+ * A4 (same width, extended downwards for bottom and upwards for top) or 16:9
+ * (the layout's viewBox).
+ * @param {number} scale 1, 2 or 4
+ * @param {object|null} layout pie.js legendLayout() of a -legend file
  * @returns {{ x, y, width, height, pxWidth, pxHeight }} viewBox in user units and size in px
  */
-export function rasterFrame(scale = 1, legendBox = null) {
-  const side = RASTER_SIDE * scale;
-  const full = CROP.size / (1 - 2 * RASTER_MARGIN);
-  const margin = (full - CROP.size) / 2;
-  const unitsPerPx = full / side;
-  const x = CROP.x - margin;
-  const y = CROP.y - margin;
-  let right = x + full;
-  let bottom = y + full;
-  if (legendBox) {
-    right = Math.max(right, legendBox.x + legendBox.width + margin);
-    bottom = Math.max(bottom, legendBox.y + legendBox.height + margin);
+export function rasterFrame(scale = 1, layout = null) {
+  const square = squareFrame();
+  const unitsPerPx = square.width / (RASTER_SIDE * scale);
+  let { x, y, width, height } = square;
+  if (layout?.shape === 'a4') {
+    height = width * Math.SQRT2;
+    if (layout.position === 'top') y = square.y + square.height - height;
+  } else if (layout?.shape === 'wide') {
+    ({ x, y, width, height } = layout.viewBox);
   }
-  const pxWidth = Math.round((right - x) / unitsPerPx);
-  const pxHeight = Math.round((bottom - y) / unitsPerPx);
+  const pxWidth = Math.round(width / unitsPerPx);
+  const pxHeight = Math.round(height / unitsPerPx);
   return { x, y, width: pxWidth * unitsPerPx, height: pxHeight * unitsPerPx, pxWidth, pxHeight };
 }
 
@@ -172,14 +142,14 @@ async function loadImage(url) {
  * @param {object} options
  * @param {'png'|'jpg'} options.format
  * @param {number} [options.scale] 1, 2 or 4
- * @param {object|null} [options.legendBox] from measureLegend(), for files with legend
+ * @param {object|null} [options.layout] the file's legend layout (pie.js), for -legend files
  * @returns {Promise<Blob>}
  */
-export async function renderRaster(svgText, { format, scale = 1, legendBox = null }) {
+export async function renderRaster(svgText, { format, scale = 1, layout = null }) {
   const type = FORMATS[format];
   if (!type) throw new Error(`renderRaster: unknown format "${format}".`);
   if (!RASTER_SCALES.includes(scale)) throw new Error(`renderRaster: unknown scale ${scale}.`);
-  const frame = rasterFrame(scale, legendBox);
+  const frame = rasterFrame(scale, layout);
   const svg = await rasterSvg(svgText, frame);
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {

@@ -1,15 +1,29 @@
-// Snapshot comparison with a tolerance for text x positions.
+// Snapshot comparison with a tolerance for values that depend on the browser's
+// measurements.
 //
-// Text widths are measured by the browser (§7 step 8), and browsers differ
-// slightly (Firefox vs Chromium by up to about 1 template unit, 0.04 % of the
-// pie). So the x of <text> elements may differ by TEXT_X_TOLERANCE; everything
-// else must match exactly.
+// Text widths (§7 step 8) and the legend's bounding box (§5.2) are measured by
+// the browser, and browsers differ slightly (Firefox vs Chromium by up to about
+// 1 template unit, 0.04 % of the pie). So these may differ by TEXT_X_TOLERANCE:
+// the x of <text> elements, and the numbers in the root viewBox and in the
+// legend's transform (both follow from the legend box). Everything else must
+// match exactly.
 
 import { serializeElement } from '../pie.js';
 
 export const TEXT_X_TOLERANCE = 1; // template units
 
 const parse = (text) => new DOMParser().parseFromString(text, 'image/svg+xml');
+const NUMBER = /-?\d+(?:\.\d+)?/g;
+
+// If two attribute values differ only in numbers, each by at most the tolerance,
+// return the largest difference; otherwise null.
+function numericDiff(a, b) {
+  if (a === null || b === null || a.replace(NUMBER, '#') !== b.replace(NUMBER, '#')) return null;
+  const na = a.match(NUMBER) || [];
+  const nb = b.match(NUMBER) || [];
+  const diff = Math.max(0, ...na.map((v, i) => Math.abs(Number(v) - Number(nb[i]))));
+  return diff <= TEXT_X_TOLERANCE ? diff : null;
+}
 const xValue = (el) => parseFloat(el.getAttribute('x'));
 
 // Element tag, attributes and own text, for locating the first difference.
@@ -42,6 +56,30 @@ export function compareSnapshot(expectedText, actualText) {
       maxTextDiff = Math.max(maxTextDiff, diff);
       el.setAttribute('x', reference.getAttribute('x'));
     });
+  }
+  // Root viewBox and the legend's leading translate(…) follow from the measured
+  // legend box; the rest of the legend transform must match exactly.
+  const translatePart = (value) => /^translate\([^)]*\)/.exec(value || '')?.[0] ?? null;
+  const pairs = [
+    [actual.documentElement, expected.documentElement, 'viewBox', (v) => v],
+    [
+      actual.getElementById('Legend'),
+      expected.getElementById('Legend'),
+      'transform',
+      translatePart,
+    ],
+  ];
+  for (const [el, reference, name, part] of pairs) {
+    if (!el || !reference) continue;
+    const a = el.getAttribute(name);
+    const r = reference.getAttribute(name);
+    const pa = part(a);
+    const pr = part(r);
+    if (pa === null || pr === null || a.slice(pa.length) !== r.slice(pr.length)) continue;
+    const diff = numericDiff(pr, pa);
+    if (diff === null) continue;
+    maxTextDiff = Math.max(maxTextDiff, diff);
+    el.setAttribute(name, r);
   }
   const declaration = (text) => text.slice(0, text.indexOf('<svg'));
   if (
