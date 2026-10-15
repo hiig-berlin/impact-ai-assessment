@@ -341,7 +341,7 @@ Right column, the **preview**:
 - **Tabs**: Overviews (2), Clusters (5), Scores (the number that occur), Slices (24), each showing its file count.
 - **View switch**: **Gallery** (default) / **Grid**.
   - Gallery: one large preview, with thumbnails of the current tab's files below. Clicking a thumbnail selects it. The toolbar has a file menu and SVG / PNG / JPG download buttons for the selected file.
-  - Grid: all files of the current tab as cards (preview, title, path). Clicking a card opens it in the gallery. The toolbar has "Download <n> <group> (ZIP)" for the current tab, using the selected ZIP formats.
+  - Grid: all files of the current tab as cards (preview, title, path). Clicking a card opens it in the gallery. Above the grid, "Download <group> (<n> files)" downloads the current tab as `rating-pie-YYYY-MM-DD-<group>.zip`, with all variants of its files (legend and centre versions) in the selected ZIP formats.
 - **Clusters tab**: a "With centre sector" checkbox switches between `clusters/<category>` and `clusters/<category>-centre`. The full ZIP always has both.
 - **Previews** are framed like the PNG files (square, or extended for the legend), with embedded fonts, on a light checkerboard so transparent areas are visible. They update when options change.
 - **Empty state** before a CSV is loaded: a placeholder in the preview area, and the downloads disabled.
