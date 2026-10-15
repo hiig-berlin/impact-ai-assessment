@@ -133,7 +133,7 @@ Everything can be downloaded individually, or as one ZIP named `rating-pie-YYYY-
 - Rendered in the browser from the SVG (SVG → `<img>` → `<canvas>` → `toBlob`).
 - **Framing**: the raster shows the content, not the A4 page.
   - Files without legend: a **square** image, **1080 × 1080 px** by default. The square crop from §5 (2400 × 2400) fills it with a margin of 5 % on each side, so the pie is the same size and in the same place in every image, overviews included.
-  - Files with legend: same width, same pie size and position. The canvas is extended downwards (and to the right, if the legend sticks out) to fit the legend's bounding box plus the same margin.
+  - Files with legend: A4 portrait or 16:9 landscape depending on the legend position, with the same pie size (§5.2).
 - **Size option**: ×1 (1080 px, default), ×2 (2160 px), ×4 (4320 px) for the square side. The SVGs stay resolution-independent for print.
 - **72 dpi** is written into the file metadata (PNG `pHYs` chunk, JPEG JFIF density), since `canvas.toBlob` doesn't set it.
 - **Background**: PNG transparent, JPG white (quality 0.92).
@@ -146,13 +146,24 @@ Only the two overviews have a legend (`overview-legend`, `overview-scores-legend
 
 - **Option**: legend position **left / right / top / bottom**, default **bottom** (one setting per run). It applies to the `-legend` files in all three formats.
 - **ZIP**: always contains both versions of each overview, with and without legend; the legend versions use the chosen position.
-- **Bottom** is the template's own position: the output is the same as in version 1.
+- **Bottom** is the template's own position: the SVG is the same as in version 1 (the PNG/JPG get the A4 shape, see below).
 - **Other positions**: the generator moves the legend by prepending `translate(dx,dy)` to the `Legend` group's `transform`; the legend itself is otherwise unchanged (§6). The legend keeps the same distance to the chart's square crop as in the template, turned to the chosen side, and is aligned to the same end:
   - right / left: beside the crop square, bottom edges aligned;
   - top: above the crop square, right edges aligned (mirroring bottom).
-  - Exact offsets are checked by eye before the snapshots are committed.
-- **SVG canvas** (**Open**): for bottom, the A4 page as now. For left, right and top the legend doesn't fit on the portrait A4 page. Proposal: those SVGs use the same frame as their PNG/JPG (crop square plus legend plus margin) instead of the A4 page.
-- **PNG/JPG framing**: generalises §5.1. The pie stays the same size; the canvas is extended towards the legend (left and right add width, top and bottom add height) to fit the legend's bounding box plus the same margin. With left or top, the pie therefore moves right or down within the image.
+- **Page shape** follows the use: left and right are for slides, top and bottom for reports.
+
+  | Legend | Shape | SVG `viewBox` | PNG/JPG at ×1 |
+  |---|---|---|---|
+  | bottom | A4 portrait | the template page, `0 0 2481 3508` (as in version 1) | 1080 × 1527 |
+  | top | A4 portrait | 2481 × 3508, shifted up so the legend has the same distance from the page top as the chart has in the bottom layout | 1080 × 1527 |
+  | left, right | 16:9 landscape | 4741 × 2667: the crop square plus the raster margin (§5.1) in height | 1920 × 1080 |
+
+  ×2 and ×4 scale these sizes. In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group; in the A4 shape, the chart keeps its horizontal position from the template.
+- **PNG/JPG framing** for the `-legend` files (replaces the "extended canvas" rule of version 1). The frame starts from the square raster frame of §5.1 (crop square plus 5 % margin):
+  - A4 (top, bottom): same width, extended to the A4 ratio (height = width × √2), downwards for bottom and upwards for top;
+  - 16:9 (left, right): same height, extended to 16:9 width, with chart and legend centred horizontally as in the SVG.
+  - So the A4 rasters have the margins of the square images, not the SVG page's margins. Areas without content are transparent (PNG) or white (JPG).
+- Exact offsets and the fit of the legend in each shape are checked by eye before the snapshots are committed.
 
 ## 6. Template structure (`template/template.svg`)
 
@@ -408,8 +419,8 @@ SPECS.md
 - For any start angle, all labels and numbers are upright (right half reading outward, left half reading inward).
 - A criterion name in the CSV replaces the label in all outputs, positioned correctly on both halves; file names don't change.
 - All SVGs open in Affinity with named layers and editable text in PT Sans.
-- PNG and JPG files are square without legend and extended with legend (§5.1, §5.2), and show PT Sans correctly, also on a computer without PT Sans installed.
-- With the legend at left, right, top or bottom, the overview `-legend` files show the legend on that side, next to an unchanged pie; bottom matches version 1.
+- PNG and JPG files are square without legend, and A4 portrait (legend top/bottom) or 16:9 landscape (legend left/right) with legend (§5.1, §5.2), and show PT Sans correctly, also on a computer without PT Sans installed.
+- With the legend at left, right, top or bottom, the overview `-legend` files show the legend on that side, next to a pie of unchanged size; the bottom SVG matches version 1.
 - The page works as described in §8: header links and ZIP button, CSV and options on the left, preview with tabs, gallery and grid views on the right; it stacks on a phone-width screen.
 - Every file can be downloaded individually and as part of the ZIP.
 - Invalid CSVs (missing criterion, score `6`, score `4.5`, score `Good`) show a clear error with the row number and produce no download. Empty rows and duplicate rows don't block output.
