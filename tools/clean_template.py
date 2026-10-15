@@ -54,8 +54,32 @@ for gid,font,fs in [('Nummerierung---außen','PTSans-Bold',37.5),('Kriterienschr
     txt[gid]=dict(strings=strings,ws=ws,frames=frames,y0=y0,style=style)
 NUM_C=1684.45; LAB_R=1658.0; LAB_L=2371.8      # number centre, label start (right) / label end (left), local x
 
+# legend: English ids that don't clash with the diagram's category groups (Legend-Impact …),
+# plain text without Affinity's letter-split tspans and without ligature characters
+leg=[e for e in r if e.get('id')=='Legende'][0]
+leg.set('id','Legend'); leg.set(A,'Legend')
+tiles=[e for e in leg.iter() if e.get('id')=='Kacheln'][0]
+tiles.set('id','Legend-Tiles'); tiles.set(A,'Tiles')
+for g in tiles:
+    grey=g.get('id')=='Grau'
+    name='Grey' if grey else CATS[LEG[g.get('id')]][0]
+    slug='Legend-'+re.sub(r'\W+','-',name)
+    g.set('id',slug); g.set(A,name)
+    level=1 if grey else 0
+    for ch in g:
+        if any(tag(x)=='text' for x in ch.iter()):
+            ch.set('id','Legend-Score-Names' if grey else slug+'-label'); ch.set(A,'Score names' if grey else 'Label')
+        else:
+            kind='tile' if grey else 'level'
+            ch.set('id','%s-%s%d'%(slug,kind,level)); ch.set(A,'%s %d'%(kind.title(),level)); level+=1
+for e in leg.iter():
+    if tag(e)=='text':
+        s=''.join(e.itertext()).replace('ﬁ','fi').replace('ﬂ','fl')
+        for ch in list(e): e.remove(ch)
+        e.text=s
+
 svg=ET.Element(r.tag, r.attrib)
-svg.append([e for e in r if e.get('id')=='Legende'][0])
+svg.append(leg)
 diag=ET.SubElement(svg,'{%s}g'%NS,{'id':'Diagram',A:'Diagram'})
 catg=[ET.SubElement(diag,'{%s}g'%NS,{'id':re.sub(r'\W+','-',n),A:n}) for n,_ in CATS]
 for p in range(24):

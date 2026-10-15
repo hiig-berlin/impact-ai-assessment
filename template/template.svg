@@ -1,26 +1,26 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:affinity="https://www.affinity.studio/" width="100%" height="100%" viewBox="0 0 2481 3508" version="1.1" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;"><g id="Legende" transform="matrix(1.570016,0,0,1.570016,283.543889,-1893.077691)">
-        <g id="Kacheln" transform="matrix(0.673125,-0.389421,0.389421,0.673125,-1511.377455,2100.903966)">
-            <g id="Lila" transform="matrix(-0.006232,-0.561807,0.561807,-0.006232,642.442633,3910.773982)">
-                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:affinity="https://www.affinity.studio/" width="100%" height="100%" viewBox="0 0 2481 3508" version="1.1" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;"><g id="Legend" transform="matrix(1.570016,0,0,1.570016,283.543889,-1893.077691)" affinity:id="Legend">
+        <g id="Legend-Tiles" transform="matrix(0.673125,-0.389421,0.389421,0.673125,-1511.377455,2100.903966)" affinity:id="Tiles">
+            <g id="Legend-Impact" transform="matrix(-0.006232,-0.561807,0.561807,-0.006232,642.442633,3910.773982)" affinity:id="Impact">
+                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)" id="Legend-Impact-level0" affinity:id="Level 0">
                     <path d="M1322.839,2656.181L1114.276,2864.745C1108.834,2859.303 1102.703,2854.598 1096.039,2850.751L1243.515,2595.314C1272.503,2612.05 1299.171,2632.513 1322.839,2656.181Z" style="fill:rgb(240,217,236);stroke:white;stroke-width:2.28px;" />
                 </g>
-                <g id="Social-Sustainability" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+                <g id="Legend-Impact-level1" affinity:id="Level 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(224,179,217);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability1" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Impact-level2" affinity:id="Level 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(209,140,198);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability2" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Impact-level3" affinity:id="Level 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(193,102,179);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability3" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Impact-level4" affinity:id="Level 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(178,63,160);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability4" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Impact-level5" affinity:id="Level 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(162,25,141);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Impact" transform="matrix(1.774213,2.287245,-2.287245,1.774213,7768.810316,-4810.426328)">
+                <g id="Legend-Impact-label" transform="matrix(1.774213,2.287245,-2.287245,1.774213,7768.810316,-4810.426328)" affinity:id="Label">
                     <g transform="matrix(0.503607,-0,0,0.503607,394.667833,1631.071851)">
                         <text x="801.107px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Impact</text>
                     </g>
@@ -39,66 +39,66 @@
                     </g>
                 </g>
             </g>
-            <g id="Grau" transform="matrix(-0.151511,-0.541027,0.541027,-0.151511,922.672315,4175.405023)">
-                <g id="Social-Sustainability5" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+            <g id="Legend-Grey" transform="matrix(-0.151511,-0.541027,0.541027,-0.151511,922.672315,4175.405023)" affinity:id="Grey">
+                <g id="Legend-Grey-tile1" affinity:id="Tile 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,233);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability6" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Grey-tile2" affinity:id="Tile 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,233);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability7" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Grey-tile3" affinity:id="Tile 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,233);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability8" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Grey-tile4" affinity:id="Tile 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,233);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability9" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Grey-tile5" affinity:id="Tile 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,233);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Benennung-Skalen-Legende" affinity:id="Benennung Skalen Legende" transform="matrix(-1.664377,1.30842,-1.30842,-1.664377,8157.80472,6849.12818)">
+                <g id="Legend-Score-Names" affinity:id="Score names" transform="matrix(-1.664377,1.30842,-1.30842,-1.664377,8157.80472,6849.12818)">
                     <g transform="matrix(0.68858,0,-0,0.68858,628.30654,1088.362576)">
                         <g transform="matrix(25,0,0,25,572.223725,3160.181155)">
                         </g>
                         <g transform="matrix(25,0,0,25,579.560182,3160.181155)">
                         </g>
-                        <text x="519.299px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Insufﬁcient</text>
+                        <text x="519.299px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Insufficient</text>
                     </g>
                     <g transform="matrix(0.68858,0,-0,0.68858,630.240631,1060.532905)">
-                        <text x="549.109px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">W<tspan x="568.759px " y="3160.181px ">e</tspan>ak</text>
+                        <text x="549.109px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Weak</text>
                     </g>
                     <g transform="matrix(0.68858,0,-0,0.68858,629.254095,1031.482739)">
                         <text x="516.609px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Ambivalent</text>
                     </g>
                     <g transform="matrix(0.68858,0,-0,0.68858,630.893066,1000.854193)">
-                        <text x="515.084px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Satisfact<tspan x="606.309px " y="3160.181px ">o</tspan>ry</text>
+                        <text x="515.084px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Satisfactory</text>
                     </g>
                     <g transform="matrix(0.68858,0,-0,0.68858,628.730942,971.996257)">
-                        <text x="522.899px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Ex<tspan x="548.574px " y="3160.181px ">e</tspan>mplary</text>
+                        <text x="522.899px" y="3160.181px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:25px;">Exemplary</text>
                     </g>
                 </g>
             </g>
-            <g id="Gelb" transform="matrix(0.139902,-0.544144,0.544144,0.139902,439.799566,3581.595122)">
-                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)">
+            <g id="Legend-Governance" transform="matrix(0.139902,-0.544144,0.544144,0.139902,439.799566,3581.595122)" affinity:id="Governance">
+                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)" id="Legend-Governance-level0" affinity:id="Level 0">
                     <path d="M1322.839,2656.181L1114.276,2864.745C1108.834,2859.303 1102.703,2854.598 1096.039,2850.751L1243.515,2595.314C1272.503,2612.05 1299.171,2632.513 1322.839,2656.181Z" style="fill:rgb(255,244,213);stroke:white;stroke-width:2.28px;" />
                 </g>
-                <g id="Social-Sustainability10" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+                <g id="Legend-Governance-level1" affinity:id="Level 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(254,233,170);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability11" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Governance-level2" affinity:id="Level 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(254,222,128);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability12" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Governance-level3" affinity:id="Level 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(253,212,85);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability13" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Governance-level4" affinity:id="Level 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(253,201,43);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability14" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Governance-level5" affinity:id="Level 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(252,190,0);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Governance" transform="matrix(1.765368,2.294078,-2.294078,1.765368,7924.686589,-4885.95242)">
+                <g id="Legend-Governance-label" transform="matrix(1.765368,2.294078,-2.294078,1.765368,7924.686589,-4885.95242)" affinity:id="Label">
                     <g transform="matrix(0.503607,-0,-0,0.503607,395.078965,1685.818354)">
-                        <text x="744.743px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Go<tspan x="775.509px 788.266px " y="2984.597px 2984.597px ">ve</tspan>rnanc<tspan x="865.886px " y="2984.597px ">e</tspan></text>
+                        <text x="744.743px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Governance</text>
                     </g>
                     <g transform="matrix(0.27313,0,0,0.27313,851.730315,3184.106989)">
                         <g transform="matrix(1,0,0,1,-50,-50)">
@@ -112,26 +112,26 @@
                     </g>
                 </g>
             </g>
-            <g id="Blau" transform="matrix(0.280497,-0.486813,0.486813,0.280497,326.19952,3192.575832)">
-                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)">
+            <g id="Legend-Social-Sustainability" transform="matrix(0.280497,-0.486813,0.486813,0.280497,326.19952,3192.575832)" affinity:id="Social Sustainability">
+                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)" id="Legend-Social-Sustainability-level0" affinity:id="Level 0">
                     <path d="M1322.839,2656.181L1114.276,2864.745C1108.834,2859.303 1102.703,2854.598 1096.039,2850.751L1243.515,2595.314C1272.503,2612.05 1299.171,2632.513 1322.839,2656.181Z" style="fill:rgb(213,233,240);stroke:white;stroke-width:2.28px;" />
                 </g>
-                <g id="Social-Sustainability15" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+                <g id="Legend-Social-Sustainability-level1" affinity:id="Level 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(170,211,225);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability16" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Social-Sustainability-level2" affinity:id="Level 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(128,189,209);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability17" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Social-Sustainability-level3" affinity:id="Level 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(85,167,194);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability18" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Social-Sustainability-level4" affinity:id="Level 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(43,145,178);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability19" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Social-Sustainability-level5" affinity:id="Level 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(0,123,163);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Social-Sustainability20" affinity:id="Social Sustainability" transform="matrix(1.79324,2.272358,-2.272358,1.79324,7958.283152,-5055.896244)">
+                <g id="Legend-Social-Sustainability-label" affinity:id="Label" transform="matrix(1.79324,2.272358,-2.272358,1.79324,7958.283152,-5055.896244)">
                     <g transform="matrix(0.503607,0,0,0.503607,395.03423,1740.393354)">
                         <text x="645.436px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Social Sustainability</text>
                     </g>
@@ -144,26 +144,26 @@
                     </g>
                 </g>
             </g>
-            <g id="Grün" transform="matrix(0.402638,-0.391853,0.391853,0.402638,321.9199,2778.507512)">
-                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)">
+            <g id="Legend-Environmental-Sustainability" transform="matrix(0.402638,-0.391853,0.391853,0.402638,321.9199,2778.507512)" affinity:id="Environmental Sustainability">
+                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)" id="Legend-Environmental-Sustainability-level0" affinity:id="Level 0">
                     <path d="M1322.839,2656.181L1114.276,2864.745C1108.834,2859.303 1102.703,2854.598 1096.039,2850.751L1243.515,2595.314C1272.503,2612.05 1299.171,2632.513 1322.839,2656.181Z" style="fill:rgb(244,244,213);stroke:white;stroke-width:2.28px;" />
                 </g>
-                <g id="Social-Sustainability21" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+                <g id="Legend-Environmental-Sustainability-level1" affinity:id="Level 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(233,233,170);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability22" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Environmental-Sustainability-level2" affinity:id="Level 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(222,221,128);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability23" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Environmental-Sustainability-level3" affinity:id="Level 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(210,210,85);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability24" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Environmental-Sustainability-level4" affinity:id="Level 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(199,198,43);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability25" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Environmental-Sustainability-level5" affinity:id="Level 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(188,187,0);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Environmental-Sustainability" affinity:id="Environmental Sustainability" transform="matrix(1.748584,2.306897,-2.306897,1.748584,8229.623601,-5032.736108)">
+                <g id="Legend-Environmental-Sustainability-label" affinity:id="Label" transform="matrix(1.748584,2.306897,-2.306897,1.748584,8229.623601,-5032.736108)">
                     <g transform="matrix(0.503607,-0,0,0.503607,395.047538,1794.581346)">
                         <text x="545.851px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Environmental Sustainability</text>
                     </g>
@@ -176,28 +176,28 @@
                     </g>
                 </g>
             </g>
-            <g id="Türkis" transform="matrix(0.487556,-0.279204,0.279204,0.487556,414.60998,2420.329494)">
-                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)">
+            <g id="Legend-Economic-Sustainability" transform="matrix(0.487556,-0.279204,0.279204,0.487556,414.60998,2420.329494)" affinity:id="Economic Sustainability">
+                <g transform="matrix(-0.690274,2.576138,-2.576138,-0.690274,9899.445118,1364.472293)" id="Legend-Economic-Sustainability-level0" affinity:id="Level 0">
                     <path d="M1322.839,2656.181L1114.276,2864.745C1108.834,2859.303 1102.703,2854.598 1096.039,2850.751L1243.515,2595.314C1272.503,2612.05 1299.171,2632.513 1322.839,2656.181Z" style="fill:rgb(224,248,241);stroke:white;stroke-width:2.28px;" />
                 </g>
-                <g id="Social-Sustainability26" affinity:id="Social Sustainability" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
+                <g id="Legend-Economic-Sustainability-level1" affinity:id="Level 1" transform="matrix(-1.021139,3.810941,-3.810941,-1.021139,5538.970693,-4197.598749)">
                     <path d="M1975.798,357.202L1943.702,389.298C1930.008,375.604 1914.577,363.764 1897.805,354.08L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(193,241,226);stroke:white;stroke-width:1.54px;" />
                 </g>
-                <g id="Social-Sustainability27" affinity:id="Social Sustainability" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
+                <g id="Legend-Economic-Sustainability-level2" affinity:id="Level 2" transform="matrix(-1.052082,3.926424,-3.926424,-1.052082,5656.78044,-4387.642845)">
                     <path d="M1975.798,357.202L1949.366,383.634C1935.176,369.445 1919.188,357.177 1901.81,347.143L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(162,235,212);stroke:white;stroke-width:1.49px;" />
                 </g>
-                <g id="Social-Sustainability28" affinity:id="Social Sustainability" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
+                <g id="Legend-Economic-Sustainability-level3" affinity:id="Level 3" transform="matrix(-1.083026,4.041908,-4.041908,-1.083026,5774.487146,-4577.884239)">
                     <path d="M1975.798,357.202L1955.03,377.97C1940.345,363.286 1923.8,350.59 1905.815,340.206L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(130,228,197);stroke:white;stroke-width:1.45px;" />
                 </g>
-                <g id="Social-Sustainability29" affinity:id="Social Sustainability" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
+                <g id="Legend-Economic-Sustainability-level4" affinity:id="Level 4" transform="matrix(-1.113969,4.157391,-4.157391,-1.113969,5892.47741,-4767.533048)">
                     <path d="M1975.798,357.202L1960.694,372.306C1945.514,357.127 1928.411,344.003 1909.82,333.27L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(99,222,183);stroke:white;stroke-width:1.41px;" />
                 </g>
-                <g id="Social-Sustainability30" affinity:id="Social Sustainability" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
+                <g id="Legend-Economic-Sustainability-level5" affinity:id="Level 5" transform="matrix(-1.144913,4.272874,-4.272874,-1.144913,6010.451344,-4957.729434)">
                     <path d="M1975.798,357.202L1966.358,366.642C1950.683,350.968 1933.022,337.416 1913.825,326.333L1920.5,314.771C1940.707,326.438 1959.298,340.703 1975.798,357.202Z" style="fill:rgb(68,215,168);stroke:white;stroke-width:1.37px;" />
                 </g>
-                <g id="Economic-Sustainability" affinity:id="Economic Sustainability" transform="matrix(1.729491,2.321245,-2.321245,1.729491,8423.50925,-5070.790661)">
+                <g id="Legend-Economic-Sustainability-label" affinity:id="Label" transform="matrix(1.729491,2.321245,-2.321245,1.729491,8423.50925,-5070.790661)">
                     <g transform="matrix(0.503607,0,0,0.503607,392.215663,1849.256346)">
-                        <text x="609.974px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Ec<tspan x="636.082px " y="2984.597px ">o</tspan>nomic<tspan x="720.745px " y="2984.597px "> </tspan>Sustainability</text>
+                        <text x="609.974px" y="2984.597px" style="font-family:'PTSans-Regular', 'PT Sans', sans-serif;font-size:27.083px;">Economic Sustainability</text>
                     </g>
                     <g transform="matrix(0.27313,0,0,0.27313,851.730315,3347.544981)">
                         <g transform="matrix(1,0,0,1,-50,-50)">

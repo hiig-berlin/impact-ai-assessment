@@ -2,25 +2,27 @@
 
 A small static website that turns a CSV of criterion scores into the report's radial "24 criteria" diagram, clustered by category (colour) and by score, and exports the diagram plus its individual pie pieces as SVG, PNG and JPG files ready for Affinity and the report.
 
-Status: starting point for implementation. All decisions so far are listed in §10.
+Status: ready for implementation. There are no open decisions.
 
 ---
 
 ## 1. Goals
 
 - Produce the report graphic from a CSV in a few clicks, without manual editing in Affinity.
-- Run entirely in the browser: no installation, no server, no uploads. It works on any standard Windows or Mac computer.
-- Output files are provided as PNG, JPG and SVG. The SVG files open in Affinity as editable vector documents with meaningful layer names.
+- Run entirely in the browser: no installation, no server-side code, no uploads. It works on any standard Windows or Mac computer.
+- Provide every output as SVG, PNG and JPG. The SVGs open in Affinity as editable vector documents with meaningful layer names.
 
 ### Non-goals
 
 - Generating native Affinity files (`.af` / `.afdesign`). The format is closed and undocumented. Users open the SVG in Affinity and save it as `.af` if needed.
 - Uploading a template. The design is built into the site (§4.1); the CSV is the only input.
 - Accounts, storage or collaboration features.
+- Offline use. The tool is used online via GitHub Pages.
 
-### Long-term goals (not in scope for the first version)
+### Long-term goals (not in the first version)
 
-- Editing the design (fonts, colours, labels) in the tool. Until then, the design lives in the built-in template and is changed in the repository.
+- Editing the design (fonts, colours, labels) in the tool. Until then, the design lives in the built-in template and is changed in the repository (§4.1).
+- A legend position option for the `-legend` raster files (e.g. below or to the right of the chart).
 
 ## 2. Users and usage
 
@@ -28,18 +30,30 @@ Status: starting point for implementation. All decisions so far are listed in §
 - Flow: open the page → drop in the CSV → check the preview → download single files or all files as a ZIP.
 - PT Sans is installed on the users' computers, so text renders correctly when the SVGs are opened in Affinity.
 
-## 3. Hosting
+## 3. Hosting and development
 
 - Public GitHub repository, published with **GitHub Pages** straight from the repository, with no build step.
-- Plain HTML, CSS and JavaScript. No framework or bundler is needed. Libraries (e.g. for ZIP creation) and the PT Sans font files (SIL Open Font License) are committed to the repo (vendored), not loaded from a CDN, so the tool keeps working long-term.
-- Expected usage is far below GitHub Pages limits (1 GB site size, 100 GB/month soft traffic limit, 10 builds/hour soft limit, which only applies to pushes). Using the page doesn't trigger builds; all processing happens in the browser.
+- Plain HTML, CSS and JavaScript. No framework or bundler. Libraries (e.g. for ZIP creation) and the PT Sans font files (SIL Open Font License) are committed to the repo (vendored), not loaded from a CDN, so the tool keeps working long-term.
+- Expected usage is far below GitHub Pages limits (1 GB site size, 100 GB/month soft traffic limit). Using the page doesn't trigger builds; all processing happens in the browser.
+- **Local development**: ES modules and `fetch` don't work over `file://`. Serve the repository root locally:
+
+  ```
+  python3 -m http.server 8000      # then open http://localhost:8000 (tests: /tests/)
+  ```
 
 ## 4. Inputs
 
 ### 4.1 Built-in template
 
-- The design is the cleaned template `ImpactAssessment_Template_clean.svg`, committed to the repo as `template/template.svg` and loaded automatically. Users never upload or re-import a template.
-- Design changes (e.g. new colours) are made by replacing `template/template.svg` in the repository, keeping the structure in §6.
+- `template/template.svg` is the cleaned template. It is loaded automatically; users never upload or re-import a template.
+- It is generated from `template/ImpactAssessment_Template.svg` (the original Affinity export) by `tools/clean_template.py` (§10). Design changes (e.g. new colours) are made in the original, then the clean template is regenerated:
+
+  ```
+  cd tools && python3 clean_template.py ../template/ImpactAssessment_Template.svg ../template/template.svg
+  ```
+
+  The tool runs on macOS only (`measure.swift` measures text widths with CoreText) and needs PT Sans installed. It keys on the original's layer names, so those must be kept.
+- Alternatively, `template/template.svg` can be edited directly, as long as the structure and ids in §6 are kept. Affinity regenerates ids from layer names on export, so ids must be restored before committing.
 
 ### 4.2 Scores CSV
 
@@ -47,86 +61,101 @@ Status: starting point for implementation. All decisions so far are listed in §
 criterion number;criterion name;score
 1;Objective & realisation;3
 2;Impact achievements;5
-3;Relevance of impact achievements;4
+...
+9;"Inclusion, participation & co-design";3
 ...
 24;Future perspectives & collaboration;5
 ```
 
-- **Header row** required. The column names `criterion number`, `criterion name` and `score` are matched case-insensitively. Other columns (e.g. `comment`) are ignored.
-- **Delimiter**: auto-detect `;` (German Excel) or `,`. Also accept tab.
-- **Encoding**: UTF-8, with or without BOM. Also try Windows-1252 if UTF-8 decoding fails (Excel exports).
+- **Header row** required. The column names `criterion number`, `criterion name` and `score` are matched case-insensitively, ignoring surrounding spaces. Other columns (e.g. `comment`) are ignored.
+- **Delimiter**: auto-detected from the header row: `;` (German Excel), `,` or tab.
+- **Quoting** (RFC 4180): fields may be wrapped in double quotes, and must be when they contain the delimiter, a quote or a line break. Inside a quoted field, `""` is a literal quote. Several names contain commas (criteria 9 and 21), so comma-delimited files rely on this.
+- **Encoding**: UTF-8, with or without BOM. If strict UTF-8 decoding fails, fall back to Windows-1252 (older Excel exports).
+- **Empty rows** (no values, or only delimiters and whitespace) are ignored silently. They often appear at the end of Excel/Sheets exports.
 - **criterion number**: integer 1–24 (the number shown on the diagram).
-- **criterion name**: optional. If present and not empty, it replaces the template's label in the graphic. If empty or missing, the template's label is used (§6.2).
-- **score**: number 1–5 or name (case-insensitive):
+- **criterion name**: optional. If present and not empty, it replaces the template's label in the graphic. If empty or missing, the template's label is used (§6.2). A name never causes an error.
+- **score**: integer 1–5 (§6.3). Score names, decimals (`4.5`) and other values are invalid.
+- **Duplicate criterion numbers**: the first row wins; later rows with the same number are ignored, with a warning.
 
-  | Value | Name |
-  |---|---|
-  | 5 | Exemplary |
-  | 4 | Satisfactory |
-  | 3 | Ambivalent |
-  | 2 | Weak |
-  | 1 | Insufficient |
+Validation messages (always with the CSV row number). Errors block all output; warnings don't:
 
-- **Validation** (show clear messages and don't generate output on errors):
-  - every criterion 1–24 present exactly once
-  - unknown criterion numbers
-  - invalid scores (with row number)
-  - warning (not an error) if a criterion name is so long that it would run past the wedge (longer than ≈ 700 px at the label font size)
-- The repo includes `examples/ratings.csv` with the sample scores (see §9). The page offers it for download, together with an empty CSV template that already contains the 24 criterion numbers and names.
+| Check | Level |
+|---|---|
+| Required column `criterion number` or `score` missing | error |
+| Criterion number not an integer 1–24 | error |
+| Score not an integer 1–5 | error |
+| Criterion 1–24 missing | error |
+| Duplicate criterion number (row ignored) | warning |
+| Criterion name wider than ≈ 700 px at the label font size, so it would run past the wedge | warning |
+
+The repo includes `examples/ratings.csv` with the sample scores (§9). The page offers it for download, together with an empty CSV template that contains the 24 criterion numbers and names and an empty score column.
 
 ## 5. Outputs
 
-Every file can be downloaded individually, or all together as **one ZIP** (e.g. `rating-pie_YYYY-MM-DD.zip`). Each SVG is also available as PNG and JPG (§5.1).
+File and layer names come from the tables in §6.1–§6.3 and never from CSV names, so they stay stable from report to report. Each SVG also exists as PNG and JPG, with the same path and name and a different extension.
 
 ```
-overview.svg                         full diagram, ordered by category, with centre pie
-overview-legend.svg                  same, incl. legend
-overview-scores.svg                  full diagram, ordered by score, blank centre
-overview-scores-legend.svg           same, incl. legend
-clusters/impact.svg                  one file per category, without centre sector
-clusters/impact-centre.svg           same, with the category's centre sector and icon
-clusters/governance.svg
-clusters/governance-centre.svg
-...
-scores/rating-5-Exemplary.svg        one file per non-empty score
-scores/rating-4-Satisfactory.svg
-...
-slices/01_Objective-realisation.svg  one file per criterion
-...
-ratings.csv                          the input, for traceability
+overview.svg                     full diagram, category order, centre pie, no legend
+overview-legend.svg              same, with legend
+overview-scores.svg              full diagram, score order, blank centre, no legend
+overview-scores-legend.svg       same, with legend
+clusters/<category>.svg          one per category, e.g. clusters/impact.svg
+clusters/<category>-centre.svg   same, plus the category's centre sector and icon
+scores/<score>.svg               one per score that occurs, e.g. scores/5-exemplary.svg
+slices/<criterion>.svg           one per criterion, e.g. slices/07-accountability.svg
+ratings.csv                      the input, for traceability
 ```
 
-- **Overview**: the diagram in its original category order (criterion *n* at position *n−1*), with wedges, rating rings, numbers, labels and the **category pie with icons** in the centre. No legend.
-- **Overview-legend**: same as overview, with the legend included.
-- **Overview-scores**: the diagram clustered by score (§7.4), with a **blank centre** (categories are mixed, so the category pie would be misleading) and white separator lines between score clusters. With and without legend.
-- **Cluster files**: only the pieces (wedge, rating rings, number, label) of one category, either in its overview position or as an individual pie starting at the start angle (option, §7.1). No legend. Two versions per category: without centre (`impact.svg`) and with that category's centre sector and icon (`impact-centre.svg`).
-- **Score files**: only the pieces of one score, either in its score-overview position or as an individual pie starting at the start angle (option, §7.1). No centre, no legend.
-- **Slice files**: only one criterion's pieces, in its overview position (category order), so they can be laid onto the overview.
-- **Alignment**: all cluster, score and slice files use the **same viewBox** (a square crop around the chart centre, ≈ 2400 × 2400), so every pie has the same centre and size. In the "original position" mode, cluster and slice files line up exactly with the category overview, and score files with the score overview, when stacked in Affinity. In the "start angle" mode, cluster and score files are standalone pies (§7.1); slice files always keep their overview position. The overviews keep the template's full A4 page.
-- **Affinity layer names**: every generated group gets an `affinity:id` attribute (namespace `https://www.affinity.studio/`), which Affinity shows as the layer name:
-  - cluster groups: `Impact`, `Governance`, … in category order, `Exemplary`, `Satisfactory`, … in score order
-  - criterion groups: `07 Accountability`, containing `Wedge`, `Rating 1` … `Rating 5`, `Number`, `Label`
-- **Preview**: the page shows both overviews before download.
+Everything can be downloaded individually, or as one ZIP named `rating-pie-YYYY-MM-DD.zip` with the same folder structure.
+
+| File | Order | Contains | Centre | Legend |
+|---|---|---|---|---|
+| `overview` | category | all 24 criteria | category pie with icons | – |
+| `overview-legend` | category | all 24 criteria | category pie with icons | yes |
+| `overview-scores` | score | all 24 criteria, plus separators | blank | – |
+| `overview-scores-legend` | score | all 24 criteria, plus separators | blank | yes |
+| `clusters/<category>` | category | the category's criteria | – | – |
+| `clusters/<category>-centre` | category | the category's criteria | the category's sector + icon | – |
+| `scores/<score>` | score | the score's criteria (no separators) | – | – |
+| `slices/<criterion>` | category | one criterion | – | – |
+
+"Criteria" always means all of a criterion's parts: wedge, rating rings, number and label. The score overview has a blank centre because categories are mixed there, so the category pie would be misleading.
+
+- **Position**: both overviews always start at 12 o'clock. Cluster and score files follow the *pie position* option (§7.1); slice files always keep their category-overview position.
+- **Canvas**: the overviews keep the template's full A4 page. All cluster, score and slice files use the same square crop around the chart centre, `viewBox="40.157 272.634 2400 2400"` (centre ± 1200), so every pie has the same centre and size. In the "original position" mode they line up exactly with their overview when stacked in Affinity.
+- **Affinity layer names**: every generated group gets an `affinity:id` attribute (namespace `https://www.affinity.studio/`), which Affinity shows as the layer name. Cluster groups use the category or score name (`Impact`, `Exemplary`, …). Criterion groups use number and displayed label (`07 Accountability`, or the CSV name), containing `Wedge`, `Rating 1` … `Rating 5`, `Number`, `Label`.
+- **ids**: every output document has unique `id`s.
 
 ### 5.1 PNG and JPG
 
 - Rendered in the browser from the SVG (SVG → `<img>` → `<canvas>` → `toBlob`).
-- Size: **1920 × 1080 px at 72 dpi** by default, with **×2 (3840 × 2160)** and **×4 (7680 × 4320)** as options. The SVGs stay resolution-independent for print.
-- Framing: the raster uses the content, not the A4 page: the chart (plus legend in the `-legend` files) is scaled to fit inside the 16:9 frame with a margin of 5 % and centred. All cropped files (clusters, scores, slices) use the same scale and position, so every pie has the same size and centre in the images.
-- The 72 dpi value is written into the file metadata (PNG `pHYs` chunk, JPEG JFIF density), since `canvas.toBlob` doesn't set it.
-- PNG has a transparent background, JPG a white one (quality 0.92).
-- Fonts: an SVG drawn into a canvas can't use the page's web fonts. Before rasterising, embed the vendored PT Sans Regular and Bold as base64 `@font-face` in the SVG's `<style>`, so PNG/JPG text is correct even on computers without PT Sans. The SVG downloads themselves don't embed the font, so Affinity uses the installed PT Sans.
+- **Framing**: the raster shows the content, not the A4 page.
+  - Files without legend: a **square** image, **1080 × 1080 px** by default. The square crop from §5 (2400 × 2400) fills it with a margin of 5 % on each side, so the pie is the same size and in the same place in every image, overviews included.
+  - Files with legend: same width, same pie size and position. The canvas is extended downwards (and to the right, if the legend sticks out) to fit the legend's bounding box plus the same margin.
+- **Size option**: ×1 (1080 px, default), ×2 (2160 px), ×4 (4320 px) for the square side. The SVGs stay resolution-independent for print.
+- **72 dpi** is written into the file metadata (PNG `pHYs` chunk, JPEG JFIF density), since `canvas.toBlob` doesn't set it.
+- **Background**: PNG transparent, JPG white (quality 0.92).
+- **Fonts**: an SVG drawn into a canvas can't use the page's web fonts. Before rasterising, embed the vendored PT Sans Regular and Bold as base64 `@font-face` (family `PT Sans`, weights 400 and 700) in the SVG's `<style>`, so PNG/JPG text is correct even on computers without PT Sans. The SVG downloads don't embed the font, so Affinity uses the installed PT Sans.
+- **Memory**: for the ZIP, raster files are created one after another and released after compression, so ×4 doesn't need all images in memory at once.
 
 ## 6. Template structure (`template/template.svg`)
 
-The template was cleaned up and rebuilt in October 2026: every shape has exact geometry with no overlaps, all coordinates are absolute (no nested transforms), there are no embedded bitmaps, the outlines are white, and the colour shades are evenly spaced. All rings are coloured in the template ("everything Exemplary"), so it carries the full palette.
+The template was rebuilt from the original in October 2026: the wedges, rings and centre sectors have exact geometry in absolute coordinates with no overlaps, there are no embedded bitmaps, the outlines are white, and the colour shades are evenly spaced. All rings are coloured in the template ("everything Exemplary"), so it carries the full palette.
 
-Canvas: `viewBox="0 0 2481 3508"` (A4 at 300 dpi). Layer structure (Affinity layer names in brackets):
+Canvas: `viewBox="0 0 2481 3508"` (A4 at 300 dpi). Structure, with ids and the Affinity layer names in brackets:
 
 ```
-Legende                         legend (bottom right), only in the *-legend files
+Legend  [Legend]                              bottom of the page; only kept in *-legend files
+└─ Legend-Tiles  [Tiles]
+   ├─ Legend-Impact  [Impact]                 one group per category, same for the other four
+   │  ├─ Legend-Impact-level0 … -level5       colour tiles [Level 0 … Level 5]
+   │  └─ Legend-Impact-label  [Label]         category name + icon
+   ├─ Legend-Grey  [Grey]
+   │  ├─ Legend-Grey-tile1 … -tile5           grey tiles [Tile 1 … Tile 5]
+   │  └─ Legend-Score-Names  [Score names]    Insufficient … Exemplary
+   └─ Legend-Governance, Legend-Social-Sustainability, …
 Diagram  [Diagram]
-├─ Impact  [Impact]             one group per category, in category order
+├─ Impact  [Impact]                           one group per category, in category order
 │  ├─ C01  [01 Objective & realisation]
 │  │  ├─ C01-wedge    [Wedge]      category background, r 156 → 870
 │  │  ├─ C01-rating1  [Rating 1]   r 890 → 949.2
@@ -135,125 +164,139 @@ Diagram  [Diagram]
 │  │  ├─ C01-number   [Number]     PT Sans Bold 37.5
 │  │  └─ C01-label    [Label]      PT Sans 41.667
 │  └─ C02 … C05
-├─ Governance  (C06–C09)
-├─ Social-Sustainability  (C10–C20)
-├─ Environmental-Sustainability  (C21–C22)
-└─ Economic-Sustainability  (C23–C24)
-Centre  [Centre]                category pie, r 0 → 148
-├─ Centre-Impact  [Impact]      Sector (0°–75°) + Icon
-├─ Centre-Governance            Sector (75°–135°) + Icon
-├─ Centre-Social-Sustainability Sector (135°–300°) + Icon
-├─ Centre-Environmental-…       Sector (300°–330°) + Icon
-└─ Centre-Economic-…            Sector (330°–360°) + Icon
+├─ Governance                      (C06–C09)
+├─ Social-Sustainability           (C10–C20)
+├─ Environmental-Sustainability    (C21–C22)
+└─ Economic-Sustainability         (C23–C24)
+Centre  [Centre]                   category pie, r 0 → 148
+├─ Centre-Impact  [Impact]         Sector (0°–75°) + Icon
+├─ Centre-Governance               Sector (75°–135°) + Icon
+├─ Centre-Social-Sustainability    Sector (135°–300°) + Icon
+├─ Centre-Environmental-Sustainability   Sector (300°–330°) + Icon
+└─ Centre-Economic-Sustainability        Sector (330°–360°) + Icon
 ```
 
-The centre sectors use the level-5 colour of each category, with the icons centred in their sector at radius 102.
+The centre sectors use the level-5 colour of their category; the icons are centred in their sector at radius 102.
 
-Geometry:
+**Transforms** (where coordinates are not absolute):
+
+- Wedge, ring and centre-sector paths: absolute coordinates, no transform.
+- Number and label texts: one rotation `matrix(…)` directly on each `<text>`; `x`/`y` are in that rotated frame. Numbers and labels of the same criterion have different matrices.
+- Centre icons: `translate(…)` on the icon group, plus a `matrix(…)` on each icon path.
+- Legend: the original Affinity export with nested transforms. The generator never edits the legend; it only keeps or removes it. Its ids and texts are cleaned (unique English ids, plain text without letter-split `<tspan>`s or ligature characters).
+
+**Geometry**:
 
 - **Chart centre**: `(1240.157, 1472.634)`.
 - **24 positions** of 15° each, numbered clockwise from 12 o'clock. Position *p* spans `p·15°` to `(p+1)·15°`. In the template, criterion *n* sits at position *n−1*.
-- Wedges and rings are annular sectors (`M … A … L … A … Z`) in absolute coordinates, with a white 4 px stroke. Moving a criterion = rotating its paths by `Δ` about the centre.
-- **Text**: the right half (positions 0–11) reads outward, starting 161 px from the centre. The left half (positions 12–23) is turned 180° and reads inward, ending at the same radius. Numbers are centred on their position. All text uses `text-anchor: start` with explicit x positions computed from the measured width, because that's how Affinity exports and imports text reliably. The generator measures widths in the browser (`getComputedTextLength()` with the vendored PT Sans), which also covers labels replaced from the CSV.
-- **Finding the parts**: the generator relies on the ids in the built-in template (`C01` … `C24`, `C01-wedge`, `C01-rating1` … `C01-rating5`, `C01-number`, `C01-label`, `Centre-…`). If the template is ever edited and re-exported from Affinity, Affinity regenerates the ids from the layer names. Restore them before committing, or regenerate the template (§11, `tools/`).
+- Wedges and rings are annular sectors (`M … A … L … A … Z`) with a white 4 px stroke. Moving a criterion means rotating its paths about the centre.
+- **Text**: all text uses `text-anchor: start` with an explicit x computed from the measured width, because that's how Affinity exports and imports text reliably. In the text's local frame: label x = `1658.0` (right half, reads outward) or `2371.8 − width` (left half, reads inward, ending at the same radius); number x = `1684.45 − width/2` (centred). Widths are measured in the browser (§7), which also covers labels replaced from the CSV.
+
+**Finding the parts**: the generator looks up parts by the ids above (`C01` … `C24`, `C01-wedge`, `C01-rating1` … `C01-rating5`, `C01-number`, `C01-label`, `Centre-…`, `Legend`). Category groups are taken as the children of `#Diagram`, never by a document-wide id lookup.
 
 ### 6.1 Categories and colours
 
-Category comes from the category group a criterion sits in. Colours of the template:
+| Category | Slug / id | Criteria | Wedge fill (level 0) | Ring levels 1 → 5 |
+|---|---|---|---|---|
+| Impact | `impact` / `Impact` | 1–5 | `rgb(240,217,236)` | `224,179,217` · `209,140,198` · `193,102,179` · `178,63,160` · `162,25,141` |
+| Governance | `governance` / `Governance` | 6–9 | `rgb(255,244,213)` | `254,233,170` · `254,222,128` · `253,212,85` · `253,201,43` · `252,190,0` |
+| Social Sustainability | `social-sustainability` / `Social-Sustainability` | 10–20 | `rgb(213,233,240)` | `170,211,225` · `128,189,209` · `85,167,194` · `43,145,178` · `0,123,163` |
+| Environmental Sustainability | `environmental-sustainability` / `Environmental-Sustainability` | 21–22 | `rgb(244,244,213)` | `233,233,170` · `222,221,128` · `210,210,85` · `199,198,43` · `188,187,0` |
+| Economic Sustainability | `economic-sustainability` / `Economic-Sustainability` | 23–24 | `rgb(224,248,241)` | `193,241,226` · `162,235,212` · `130,228,197` · `99,222,183` · `68,215,168` |
 
-| Category | Criteria | Wedge fill (level 0) | Ring levels 1 → 5 |
-|---|---|---|---|
-| Impact | 1–5 | `rgb(240,217,236)` | `224,179,217` · `209,140,198` · `193,102,179` · `178,63,160` · `162,25,141` |
-| Governance | 6–9 | `rgb(255,244,213)` | `254,233,170` · `254,222,128` · `253,212,85` · `253,201,43` · `252,190,0` |
-| Social Sustainability | 10–20 | `rgb(213,233,240)` | `170,211,225` · `128,189,209` · `85,167,194` · `43,145,178` · `0,123,163` |
-| Environmental Sustainability | 21–22 | `rgb(244,244,213)` | `233,233,170` · `222,221,128` · `210,210,85` · `199,198,43` · `188,187,0` |
-| Economic Sustainability | 23–24 | `rgb(224,248,241)` | `193,241,226` · `162,235,212` · `130,228,197` · `99,222,183` · `68,215,168` |
-
+- The slug is used for file names (`clusters/<slug>.svg`); the id is the template group id. The category name is the Affinity layer name.
 - All shades are evenly spaced: level *L* = wedge colour + (level-5 colour − wedge colour) × *L*/5, rounded. The legend uses the same values.
 - Rings above the score are filled `rgb(233,233,233)` (light grey).
 - The generator reads the palette from the template's ring fills, so a colour change in the template carries over automatically. The table is for reference and tests.
 
 ### 6.2 Criteria
 
-| # | Label | Category |
-|---|---|---|
-| 1 | Objective & realisation | Impact |
-| 2 | Impact achievements | Impact |
-| 3 | Relevance of impact achievements | Impact |
-| 4 | Potential harm & mitigation | Impact |
-| 5 | Harm-management | Impact |
-| 6 | Necessity & proportionality | Governance |
-| 7 | Accountability | Governance |
-| 8 | Decision process & design | Governance |
-| 9 | Inclusion, participation & co-design | Governance |
-| 10 | IT security | Social |
-| 11 | Sovereignty & power relations | Social |
-| 12 | Accessibility | Social |
-| 13 | Non-discrimination | Social |
-| 14 | Data protection | Social |
-| 15 | Human oversight | Social |
-| 16 | Self-determined use | Social |
-| 17 | AI literacy | Social |
-| 18 | Open for validation & contestation | Social |
-| 19 | Technical transparency | Social |
-| 20 | User transparency | Social |
-| 21 | Complexity, energy & emissions | Environmental |
-| 22 | Natural resources | Environmental |
-| 23 | Model & dataset sharing | Economic |
-| 24 | Future perspectives & collaboration | Economic |
+| # | Label (template) | Slug (file name) | Category |
+|---|---|---|---|
+| 1 | Objective & realisation | `01-objective-realisation` | Impact |
+| 2 | Impact achievements | `02-impact-achievements` | Impact |
+| 3 | Relevance of impact achievements | `03-relevance-of-impact-achievements` | Impact |
+| 4 | Potential harm & mitigation | `04-potential-harm-mitigation` | Impact |
+| 5 | Harm-management | `05-harm-management` | Impact |
+| 6 | Necessity & proportionality | `06-necessity-proportionality` | Governance |
+| 7 | Accountability | `07-accountability` | Governance |
+| 8 | Decision process & design | `08-decision-process-design` | Governance |
+| 9 | Inclusion, participation & co-design | `09-inclusion-participation-co-design` | Governance |
+| 10 | IT security | `10-it-security` | Social Sustainability |
+| 11 | Sovereignty & power relations | `11-sovereignty-power-relations` | Social Sustainability |
+| 12 | Accessibility | `12-accessibility` | Social Sustainability |
+| 13 | Non-discrimination | `13-non-discrimination` | Social Sustainability |
+| 14 | Data protection | `14-data-protection` | Social Sustainability |
+| 15 | Human oversight | `15-human-oversight` | Social Sustainability |
+| 16 | Self-determined use | `16-self-determined-use` | Social Sustainability |
+| 17 | AI literacy | `17-ai-literacy` | Social Sustainability |
+| 18 | Open for validation & contestation | `18-open-for-validation-contestation` | Social Sustainability |
+| 19 | Technical transparency | `19-technical-transparency` | Social Sustainability |
+| 20 | User transparency | `20-user-transparency` | Social Sustainability |
+| 21 | Complexity, energy & emissions | `21-complexity-energy-emissions` | Environmental Sustainability |
+| 22 | Natural resources | `22-natural-resources` | Environmental Sustainability |
+| 23 | Model & dataset sharing | `23-model-dataset-sharing` | Economic Sustainability |
+| 24 | Future perspectives & collaboration | `24-future-perspectives-collaboration` | Economic Sustainability |
 
-These are the template's labels. A `criterion name` in the CSV replaces them (§4.2). A criterion's category always comes from the template.
+- A `criterion name` in the CSV replaces the label in the graphic and in the layer name, but not in the file name. A criterion's category always comes from the template.
+- Slug rule (for reference and tests; the table is authoritative): lowercase, `&` removed, every run of other non-alphanumeric characters → `-`, no leading or trailing `-`, two-digit number prefix.
+
+### 6.3 Scores
+
+| Score | Name (layer name) | Slug (file name) |
+|---|---|---|
+| 5 | Exemplary | `5-exemplary` |
+| 4 | Satisfactory | `4-satisfactory` |
+| 3 | Ambivalent | `3-ambivalent` |
+| 2 | Weak | `2-weak` |
+| 1 | Insufficient | `1-insufficient` |
 
 ## 7. Processing
 
-1. **Load** `template/template.svg` with `fetch` and parse it with `DOMParser`. Find the 24 criterion groups, their parts and the `Centre` layer (§6).
-2. **Check** the template (a developer safeguard, covered by the tests): 24 criteria, each with a wedge, 5 rings, a number and a label, plus 5 centre sectors.
+1. **Load** `template/template.svg` with `fetch` and parse it with `DOMParser`. Find the criterion groups, their parts, `Centre` and `Legend` (§6).
+2. **Check** the template (a developer safeguard, covered by the tests): 5 category groups under `#Diagram`, 24 criteria, each with a wedge, 5 rings, a number and a label, plus 5 centre sectors and the legend.
 3. **Parse and validate the CSV** (§4.2).
-4. **Apply scores and names**: for a criterion with score *k*, ring level *L* gets the category colour for level *L* if *L ≤ k*, otherwise grey. If the CSV has a criterion name, replace the label text and recompute its x position from the measured width.
-5. **Category order** (overview, cluster files, slices): criteria keep their template order (1 → 24); the `Centre` layer is kept and turns with the diagram.
-6. **Score order** (overview-scores, score files):
-   - Exemplary → Satisfactory → Ambivalent → Weak → Insufficient, clockwise from 12 o'clock. Empty scores are skipped.
-   - Inside a score cluster: original criterion number ascending.
-   - Remove the `Centre` layer.
-   - Separators: a white line (`stroke-width: 18`) at each cluster boundary, from radius 150 to 1190.
-7. **Place** every criterion at its final angle: overviews from 12 o'clock, individual cluster and score pies from the start angle (§7.1), with text oriented as in §7.1.
-8. **Export**: build the documents listed in §5, serialise them with `XMLSerializer`, rasterise PNG/JPG (§5.1), and offer them individually and as a ZIP.
+4. **Apply scores and names**: for a criterion with score *k*, ring level *L* gets the category colour for level *L* if *L ≤ k*, otherwise grey. If the CSV has a criterion name, replace the label text and the criterion group's layer name.
+5. **Order**:
+   - Category order (overviews, cluster files, slice files): template order 1 → 24.
+   - Score order (score overview, score files): Exemplary → Satisfactory → Ambivalent → Weak → Insufficient, clockwise from 12 o'clock; scores that don't occur are skipped. Inside a score cluster: criterion number ascending.
+6. **Place** every criterion at its final angle and orient its text (§7.1).
+7. **Separators** (score overview only): a white line (`stroke-width: 18`) from radius 150 to 1190 at every boundary between two score clusters, including the boundary at 12 o'clock. With only one score cluster there are no separators.
+8. **Measure text**: render label and number texts in a hidden, attached SVG with the vendored PT Sans, after `document.fonts.ready`, and read `getComputedTextLength()`. Set x as in §6.
+9. **Export**: build the documents listed in §5, serialise them with `XMLSerializer`, rasterise PNG/JPG (§5.1), and offer them individually and as a ZIP.
 
-### 7.1 Start angle of the individual pies, and text orientation
+### 7.1 Placement and text orientation
 
-- **Overviews are fixed**: both overviews (category and score order) always start at **12 o'clock** and run clockwise, as in the template.
-- **Pie position option** for the individual pies (cluster files and score files):
-  - **Original position** (default): each pie keeps its position from the overview it belongs to (cluster files: category overview, score files: score overview), so the files can be stacked onto the overview.
-  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge. Its first criterion starts at the **start angle** and the rest follow clockwise. With the default **270°**, the Impact pie starts at 9 o'clock and runs up to 12 o'clock and on towards 3 o'clock.
-- **Angle convention**: degrees clockwise from 12 o'clock (0° = 12 o'clock, 90° = 3 o'clock, 180° = 6 o'clock, 270° = 9 o'clock). Any whole number 0–359 is accepted. One setting applies to all cluster and score files of a run, and is only used in the "start angle" mode.
-- **Slice files** keep their overview position, so they can still be laid onto the overview.
-- **Placement** in the "start angle" mode: the criterion at index *i* (0, 1, 2 … within that cluster) spans `start + i·15°` to `start + (i+1)·15°`. Wedge and ring paths are rotated about the centre from their template angle to that span. In `*-centre` files the category's centre sector and icon are rotated by the same amount, so they still sit under their criteria.
-- **Text orientation**, to keep labels and numbers readable (applies to every file, overviews included): take the mid-angle φ of the criterion's span (mod 360).
-  - **0° ≤ φ < 180°** (right half): text reads outward from the centre, like criterion 1 in the template.
-  - **180° ≤ φ < 360°** (left half): text is turned 180° and reads inward, ending at the same distance from the centre, like criterion 13 in the template.
-  - So text flips at **0°** (12 o'clock) and **180°** (6 o'clock). In a gauge starting at 270°, the labels left of 12 o'clock read inward and those right of it read outward.
-  - Implementation: take the template text transform of criterion 1 (right half) or criterion 13 (left half), rotate it about the centre from that criterion's template mid-angle to φ, and set x from the measured text width (§6). Numbers are handled the same way and stay centred.
-- With a start angle that isn't a multiple of 15°, a criterion can sit across 12 or 6 o'clock; its mid-angle decides the side.
+- **Angle convention**: degrees clockwise from 12 o'clock (0° = 12 o'clock, 90° = 3 o'clock, 180° = 6 o'clock, 270° = 9 o'clock).
+- **Overviews** start at 0° and run clockwise.
+- **Pie position option** for cluster and score files (one setting per run):
+  - **Original position** (default): each pie keeps its position from its overview (cluster files: category overview, score files: score overview), so the files can be stacked onto the overview.
+  - **Start angle** (e.g. for presentations): each pie is laid out on its own, like a dashboard gauge. The criterion at index *i* (0, 1, 2 … within the cluster) spans `start + i·15°` to `start + (i+1)·15°`. Any whole number 0–359 is accepted; default **270°**, so the Impact pie starts at 9 o'clock and runs over 12 o'clock towards 3 o'clock.
+- **Moving a criterion**: rotate its wedge and ring paths about the centre from the template span to the target span. In `*-centre` files the category's centre sector and icon are rotated by the same amount, so they stay under their criteria.
+- **Text orientation** (every file, overviews included): take the mid-angle φ of the criterion's span (mod 360).
+  - **0° ≤ φ < 180°** (right half): text reads outward, like criterion 1 in the template.
+  - **180° ≤ φ < 360°** (left half): text is turned 180° and reads inward, like criterion 13 in the template.
+  - So text flips at 12 and 6 o'clock. With a start angle that isn't a multiple of 15°, a criterion can sit across 12 or 6 o'clock; its mid-angle decides the side.
+  - Implementation, separately for number and label: take the template transform of criterion 1 (right half) or criterion 13 (left half), rotate it about the centre by φ minus that criterion's template mid-angle (7.5° or 187.5°), and set x as in §6.
 
 ## 8. User interface
 
 One page, in English:
 
 - drop zone / file picker for the CSV
-- live preview of both overviews (category order and score order) and of one individual pie
-- validation messages and warnings
+- validation errors and warnings (§4.2)
+- live preview of both overviews and of one individual pie (Impact), updated when options change
+- pie position: **original position** (default) / **start angle**; in the "start angle" mode a number field 0–359° (default 270°) with quick buttons 0° / 90° / 180° / 270°
+- raster size: ×1 (1080 px, default) / ×2 / ×4
 - list of all output files, each with SVG / PNG / JPG download buttons
 - **Download all (ZIP)** button, with a choice of formats (SVG, PNG, JPG; all selected by default)
-- raster size option: 1920 × 1080 (default), ×2, ×4
-- position of the individual pies (cluster and score files): **original position** (default) / **start angle**
-- start angle, enabled in the "start angle" mode: number field 0–359° (default 270°) with quick buttons 0° / 90° / 180° / 270°, and a preview of one individual pie (e.g. Impact) that updates live
 - links: example CSV, empty CSV template, short instructions ("open the SVG in Affinity → save as .af")
 
 Accessibility basics: keyboard-usable controls, visible focus, sufficient contrast for UI text.
 
-## 9. Reference data (sample report)
+## 9. Reference data and tests
 
-Sample scores, used as `examples/ratings.csv` and as a regression test (the output must match the hand-checked graphic from October 2026):
+Sample scores, used as `examples/ratings.csv` and as the regression input:
 
 | Score | Criteria |
 |---|---|
@@ -266,31 +309,47 @@ Sample scores, used as `examples/ratings.csv` and as a regression test (the outp
 Expected score order in the score overview, clockwise from 12 o'clock:
 `2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24 | 3, 8, 17, 19 | 1, 9, 11, 13, 16 | 7`
 
-The clustering and template cleanup were prototyped in Python; the approach is what §6–§7 describe.
+**Tests** run in the browser, because the generator needs `DOMParser`, `XMLSerializer` and real text measurement: `tests/index.html` (served locally, §3) runs all tests and shows pass/fail, with no test framework needed. They cover:
 
-## 10. Open decisions
+- template check (§7 step 2)
+- CSV parsing: delimiters, quoting, BOM, Windows-1252, empty rows, duplicates, each validation message in §4.2
+- ordering: the expected score order above, gauge placement for start angles 0°, 270° and 7°, text side for each criterion
+- file and layer names against the tables in §6.1–§6.3; unique ids in every output
+- **snapshots**: the SVGs generated from `examples/ratings.csv` are compared with `tests/expected/`. The expected files are created once by the first implementation, checked by eye against the hand-checked graphic from October 2026, and committed. Any later change to the output shows up as a diff and is either fixed or approved by replacing the expected file.
 
-No open decisions at the moment.
-
-Decided: overviews start at 12 o'clock; cluster and score files can keep their overview position (default) or be laid out as standalone gauge-style pies with a start-angle setting (compass degrees, clockwise from 12 o'clock, default 270° = 9 o'clock); text flips at 0° and 180°; slice files keep their overview position; both overviews (category order and score order) are generated, each with and without legend; cluster files come in two versions, with and without centre sector; PNG/JPG at 1920 × 1080 px, 72 dpi, with ×2 and ×4 options; both orders are always generated; inside a cluster, criteria keep their original number order; single-criterion files are always generated; no legend in cluster, score and slice files; page language English; no template upload.
-
-## 11. Repository layout (proposal)
+## 10. Repository layout
 
 ```
 index.html
 app.js            UI, file handling, downloads, ZIP
-pie.js            template parsing, geometry, ordering, SVG export (no DOM UI code)
-raster.js         PNG/JPG rendering incl. font embedding
+pie.js            template parsing, geometry, ordering, SVG export (no UI code)
+csv.js            CSV decoding, parsing and validation (pure functions)
+raster.js         PNG/JPG rendering incl. font embedding and dpi metadata
+names.js          categories, criteria, scores, slugs (the tables in §6.1–§6.3)
 style.css
-template/template.svg
+template/template.svg                    cleaned template (generated)
+template/ImpactAssessment_Template.svg   original Affinity export (source)
 fonts/            PT Sans Regular + Bold (.woff2), OFL licence
 examples/ratings.csv
-vendor/           ZIP library (e.g. fflate, pinned version)
-tests/            regression test using examples/ratings.csv
-tools/            script that regenerated the clean template (for future design changes)
-README.md         usage + how to update the built-in template
-specs.md
+vendor/           ZIP library (e.g. fflate, pinned version) + its licence
+tests/            index.html, test modules, expected/ snapshots
+tools/            template cleanup (Python + Swift, macOS)
+LICENSE
+README.md         usage, local development, how to update the built-in template
+SPECS.md
 ```
+
+## 11. Coding standards
+
+- **JavaScript**: modern ES modules (`<script type="module">`), no transpiling, no runtime dependencies besides the vendored ZIP library. Target the current versions of Chrome, Edge, Firefox and Safari.
+- **Separation**: `csv.js`, `names.js` and `pie.js` contain no UI code and take data in and give strings or DOM documents out, so they are testable on their own. Only `app.js` touches the page.
+- **Constants**: radii, angles, centre, text x positions and colours of grey live in one place (top of `pie.js`), with the values from §6. No magic numbers elsewhere.
+- **Deterministic output**: the same input gives byte-identical SVGs: coordinates with 3 decimals, matrices with 6 (as in the template), stable element and attribute order. This keeps the snapshot tests meaningful.
+- **Safety**: CSV text is inserted only via `textContent` / `setAttribute`, never via `innerHTML` or string concatenation into markup.
+- **Naming**: camelCase for JS identifiers, kebab-case for files and slugs, ids in the template as listed in §6.
+- **Errors**: user-facing problems (CSV) become validation messages; template problems throw with a clear developer message. No silent failures.
+- **Style**: 2-space indentation, semicolons, single quotes; short comments where the geometry isn't obvious. A Prettier config is committed for consistency; no CI build step.
+- **Vendored files**: pinned version and licence noted in `vendor/README.md`.
 
 ## 12. Acceptance criteria
 
@@ -298,13 +357,12 @@ specs.md
   - an overview in category order with the centre pie, and
   - an overview in score order matching §9, with a blank centre and separators,
   - both with white outlines, no stray shapes and readable labels on both halves.
-- The score-order overview matches the hand-checked graphic from October 2026 (§9).
-- Both overviews start at 12 o'clock. In the "original position" mode, cluster files line up with the category overview and score files with the score overview. In the "start angle" mode with the default 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file.
+- All snapshot tests in `tests/index.html` pass (§9).
+- In the "original position" mode, cluster and slice files line up with the category overview and score files with the score overview when stacked in Affinity. In the "start angle" mode with 270°, the Impact cluster file starts at 9 o'clock and runs clockwise over the top; the same goes for every cluster and score file.
 - For any start angle, all labels and numbers are upright (right half reading outward, left half reading inward).
-- A criterion name in the CSV replaces the label in all outputs, positioned correctly on both halves.
-- Slice files line up exactly with the category overview when stacked in Affinity.
+- A criterion name in the CSV replaces the label in all outputs, positioned correctly on both halves; file names don't change.
 - All SVGs open in Affinity with named layers and editable text in PT Sans.
-- PNG and JPG files show PT Sans correctly, also on a computer without PT Sans installed.
+- PNG and JPG files are square without legend and extended with legend (§5.1), and show PT Sans correctly, also on a computer without PT Sans installed.
 - Every file can be downloaded individually and as part of the ZIP.
-- Invalid CSVs (missing criterion, score 6, unknown name) show a clear error and produce no download.
-- Works in current Chrome, Edge, Firefox and Safari without installation, and without a network connection once the page is loaded.
+- Invalid CSVs (missing criterion, score `6`, score `4.5`, score `Good`) show a clear error with the row number and produce no download. Empty rows and duplicate rows don't block output.
+- Works in current Chrome, Edge, Firefox and Safari without installation.
