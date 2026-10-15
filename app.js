@@ -43,7 +43,7 @@ const state = {
   previews: new Map(), // file path → object URL of its framed preview SVG
   generation: 0, // increases with every regenerate(), so stale previews are dropped
   tab: 'overviews',
-  view: 'gallery',
+  view: 'grid',
   selected: {}, // tab id → selected item index
   legendOn: false,
   centre: false,
