@@ -15,8 +15,14 @@ const files = generateFiles(base());
 // Mid-angle of a criterion as drawn: direction of its wedge's outer arc midpoint.
 function wedgeMidAngle(doc, id) {
   const d = doc.getElementById(`${id}-wedge`).getAttribute('d');
-  const [x1, y1] = d.match(/^M([-\d.]+),([-\d.]+)/).slice(1).map(Number);
-  const [x2, y2] = d.match(/A[^A]*? ([-\d.]+),([-\d.]+)L/).slice(1).map(Number);
+  const [x1, y1] = d
+    .match(/^M([-\d.]+),([-\d.]+)/)
+    .slice(1)
+    .map(Number);
+  const [x2, y2] = d
+    .match(/A[^A]*? ([-\d.]+),([-\d.]+)L/)
+    .slice(1)
+    .map(Number);
   const angle = (x, y) => (Math.atan2(x - CENTRE.x, CENTRE.y - y) * 180) / Math.PI;
   let a1 = angle(x1, y1);
   let a2 = angle(x2, y2);
@@ -40,17 +46,28 @@ test('overviews: first four files', () => {
 test('overview: category order, centre pie, A4 canvas, legend only in -legend', () => {
   const { doc } = file(files, 'overview.svg');
   const diagram = doc.getElementById('Diagram');
-  assertEqual([...diagram.children].map((g) => g.id), [
-    'Impact',
-    'Governance',
-    'Social-Sustainability',
-    'Environmental-Sustainability',
-    'Economic-Sustainability',
-  ]);
+  assertEqual(
+    [...diagram.children].map((g) => g.id),
+    [
+      'Impact',
+      'Governance',
+      'Social-Sustainability',
+      'Environmental-Sustainability',
+      'Economic-Sustainability',
+    ],
+  );
   const order = [...diagram.querySelectorAll(':scope > g > g')].map((g) => g.id);
-  assertEqual(order, Array.from({ length: 24 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`));
+  assertEqual(
+    order,
+    Array.from({ length: 24 }, (_, i) => `C${String(i + 1).padStart(2, '0')}`),
+  );
   for (let n = 1; n <= 24; n++) {
-    assertClose(wedgeMidAngle(doc, `C${String(n).padStart(2, '0')}`), (n - 1) * 15 + 7.5, 0.01, `C${n}`);
+    assertClose(
+      wedgeMidAngle(doc, `C${String(n).padStart(2, '0')}`),
+      (n - 1) * 15 + 7.5,
+      0.01,
+      `C${n}`,
+    );
   }
   assertEqual(doc.getElementById('Centre').children.length, 5);
   assertEqual(doc.documentElement.getAttribute('viewBox'), '0 0 2481 3508');
@@ -79,14 +96,20 @@ test('score overview: order matches §9, blank centre, separators', () => {
   const { doc } = file(files, 'overview-scores.svg');
   const diagram = doc.getElementById('Diagram');
   const clusters = [...diagram.children].filter((g) => g.id !== 'Separators');
-  assertEqual(clusters.map((g) => [g.id, layerName(g)]), [
-    ['Exemplary', 'Exemplary'],
-    ['Satisfactory', 'Satisfactory'],
-    ['Ambivalent', 'Ambivalent'],
-    ['Weak', 'Weak'],
-  ]);
+  assertEqual(
+    clusters.map((g) => [g.id, layerName(g)]),
+    [
+      ['Exemplary', 'Exemplary'],
+      ['Satisfactory', 'Satisfactory'],
+      ['Ambivalent', 'Ambivalent'],
+      ['Weak', 'Weak'],
+    ],
+  );
   const order = clusters.flatMap((g) => [...g.children].map((c) => Number(c.id.slice(1))));
-  assertEqual(order, [2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24, 3, 8, 17, 19, 1, 9, 11, 13, 16, 7]);
+  assertEqual(
+    order,
+    [2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24, 3, 8, 17, 19, 1, 9, 11, 13, 16, 7],
+  );
   order.forEach((n, i) =>
     assertClose(wedgeMidAngle(doc, `C${String(n).padStart(2, '0')}`), i * 15 + 7.5, 0.01, `C${n}`),
   );
@@ -95,7 +118,11 @@ test('score overview: order matches §9, blank centre, separators', () => {
   assertEqual(separators.length, 4);
   // Boundaries at 0°, 14·15°, 18·15°, 23·15°.
   const angles = separators.map((p) => {
-    const [, , , x2, y2] = p.getAttribute('d').match(/M([-\d.]+),([-\d.]+)L([-\d.]+),([-\d.]+)/).slice(0).map(Number);
+    const [, , , x2, y2] = p
+      .getAttribute('d')
+      .match(/M([-\d.]+),([-\d.]+)L([-\d.]+),([-\d.]+)/)
+      .slice(0)
+      .map(Number);
     return Math.round(normaliseAngle((Math.atan2(x2 - CENTRE.x, CENTRE.y - y2) * 180) / Math.PI));
   });
   assertEqual(angles, [0, 210, 270, 345]);

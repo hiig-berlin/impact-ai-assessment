@@ -31,7 +31,11 @@ test('names: category slugs and ids (§6.1)', () => {
       ['Impact', 'impact', 'Impact'],
       ['Governance', 'governance', 'Governance'],
       ['Social Sustainability', 'social-sustainability', 'Social-Sustainability'],
-      ['Environmental Sustainability', 'environmental-sustainability', 'Environmental-Sustainability'],
+      [
+        'Environmental Sustainability',
+        'environmental-sustainability',
+        'Environmental-Sustainability',
+      ],
       ['Economic Sustainability', 'economic-sustainability', 'Economic-Sustainability'],
     ],
   );
@@ -48,7 +52,8 @@ test('names: colour levels are evenly spaced (§6.1)', () => {
 });
 
 test('names: criterion slugs follow the slug rule (§6.2)', () => {
-  for (const c of CRITERIA) assertEqual(c.slug, slugify(c.number, c.label), `criterion ${c.number}`);
+  for (const c of CRITERIA)
+    assertEqual(c.slug, slugify(c.number, c.label), `criterion ${c.number}`);
   assertEqual(criterion(9).slug, '09-inclusion-participation-co-design');
   assertEqual(criterion(5).slug, '05-harm-management');
   assertEqual(criterion(9).category.name, 'Governance');

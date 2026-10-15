@@ -26,6 +26,8 @@ const results = await run((result) => {
 });
 
 const failed = results.filter((r) => !r.passed).length;
-summary.textContent = `${results.length - failed} of ${results.length} tests passed` + (failed ? `, ${failed} failed` : '');
+summary.textContent =
+  `${results.length - failed} of ${results.length} tests passed` +
+  (failed ? `, ${failed} failed` : '');
 summary.className = failed ? 'fail' : 'pass';
 window.testResults = results;

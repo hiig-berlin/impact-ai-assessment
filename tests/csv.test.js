@@ -5,11 +5,19 @@ import { CRITERIA } from '../names.js';
 const SAMPLE_SCORES = [3, 5, 4, 5, 5, 5, 2, 4, 3, 5, 3, 5, 3, 5, 5, 3, 4, 5, 4, 5, 5, 5, 5, 5];
 
 function quote(value, delimiter) {
-  return /["\r\n]/.test(value) || value.includes(delimiter) ? `"${value.replace(/"/g, '""')}"` : value;
+  return /["\r\n]/.test(value) || value.includes(delimiter)
+    ? `"${value.replace(/"/g, '""')}"`
+    : value;
 }
 
 // A valid CSV with all 24 criteria, built from the names table.
-function csvText({ delimiter = ';', eol = '\n', scores = SAMPLE_SCORES, header, names = true } = {}) {
+function csvText({
+  delimiter = ';',
+  eol = '\n',
+  scores = SAMPLE_SCORES,
+  header,
+  names = true,
+} = {}) {
   const head = header ?? ['criterion number', 'criterion name', 'score'];
   const lines = [head.map((h) => quote(h, delimiter)).join(delimiter)];
   for (const c of CRITERIA) {
@@ -33,7 +41,10 @@ test('csv: example file parses without messages', async () => {
   assertEqual(result.warnings, []);
   assertEqual(result.delimiter, ';');
   assertEqual(result.ratings.length, 24);
-  assertEqual(result.ratings.map((r) => r.score), SAMPLE_SCORES);
+  assertEqual(
+    result.ratings.map((r) => r.score),
+    SAMPLE_SCORES,
+  );
   assertEqual(result.ratings[8].name, 'Inclusion, participation & co-design');
   assertEqual(result.ratings[0].row, 2);
 });
@@ -55,15 +66,22 @@ test('csv: quoting with delimiters, "" and line breaks', () => {
     { row: 1, fields: ['a', 'b,c', 'say "hi"', 'line\nbreak'] },
     { row: 2, fields: ['x', 'y'] },
   ]);
-  const text = 'criterion number,criterion name,score\n' + csvText({ delimiter: ',' }).split('\n').slice(1).join('\n');
-  const result = readRatings(text.replace('9,"Inclusion, participation & co-design",3', '9,"Two\nlines ""quoted""",3'));
+  const text =
+    'criterion number,criterion name,score\n' +
+    csvText({ delimiter: ',' }).split('\n').slice(1).join('\n');
+  const result = readRatings(
+    text.replace('9,"Inclusion, participation & co-design",3', '9,"Two\nlines ""quoted""",3'),
+  );
   assertEqual(result.errors, []);
   assertEqual(result.ratings[8].name, 'Two\nlines "quoted"');
 });
 
 test('csv: unclosed quote is an error', () => {
   const result = readRatings(csvText().replace('1;Objective & realisation;3', '1;"Objective;3'));
-  assert(errorTexts(result).some((t) => /^Row 2: .*not closed/.test(t)), errorTexts(result).join(' | '));
+  assert(
+    errorTexts(result).some((t) => /^Row 2: .*not closed/.test(t)),
+    errorTexts(result).join(' | '),
+  );
   assertEqual(result.ratings, []);
 });
 
@@ -102,7 +120,10 @@ test('csv: Windows-1252 fallback', () => {
   assertEqual(result.errors, []);
   assertEqual(result.ratings[6].name, 'Rechenschaftspflicht für Öffentlichkeit');
   // Valid UTF-8 is decoded as UTF-8.
-  assertEqual(readRatings(new TextEncoder().encode(text)).ratings[6].name, 'Rechenschaftspflicht für Öffentlichkeit');
+  assertEqual(
+    readRatings(new TextEncoder().encode(text)).ratings[6].name,
+    'Rechenschaftspflicht für Öffentlichkeit',
+  );
 });
 
 test('csv: empty rows are ignored silently but keep row numbers', () => {

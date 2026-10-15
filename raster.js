@@ -42,9 +42,10 @@ async function fontFace(url, weight) {
 
 // @font-face rules with the vendored PT Sans Regular and Bold as base64.
 export function fontCss() {
-  fontCssPromise ??= Promise.all([fontFace(FONT_URLS.regular, 400), fontFace(FONT_URLS.bold, 700)]).then(
-    (rules) => rules.join(''),
-  );
+  fontCssPromise ??= Promise.all([
+    fontFace(FONT_URLS.regular, 400),
+    fontFace(FONT_URLS.bold, 700),
+  ]).then((rules) => rules.join(''));
   return fontCssPromise;
 }
 
@@ -69,7 +70,10 @@ export async function measureLegend(svgText, doc = document) {
   const parsed = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   if (!parsed.getElementById('Legend')) return null;
   embedFonts(parsed, await fontCss());
-  const [, , width, height] = parsed.documentElement.getAttribute('viewBox').split(/[\s,]+/).map(Number);
+  const [, , width, height] = parsed.documentElement
+    .getAttribute('viewBox')
+    .split(/[\s,]+/)
+    .map(Number);
   const svg = doc.importNode(parsed.documentElement, true);
   svg.setAttribute('width', String(width));
   svg.setAttribute('height', String(height));
@@ -94,7 +98,8 @@ export async function measureLegend(svgText, doc = document) {
       const matrix = rootInverse.multiply(el.getScreenCTM());
       if (el.localName === 'path') {
         const length = el.getTotalLength();
-        for (let i = 0; i <= PATH_SAMPLES; i++) addPoint(el.getPointAtLength((length * i) / PATH_SAMPLES), matrix);
+        for (let i = 0; i <= PATH_SAMPLES; i++)
+          addPoint(el.getPointAtLength((length * i) / PATH_SAMPLES), matrix);
       } else {
         const b = el.getBBox();
         for (const [px, py] of [
@@ -142,7 +147,10 @@ export async function rasterSvg(svgText, frame) {
   const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
   embedFonts(doc, await fontCss());
   const root = doc.documentElement;
-  root.setAttribute('viewBox', [frame.x, frame.y, frame.width, frame.height].map((v) => v.toFixed(3)).join(' '));
+  root.setAttribute(
+    'viewBox',
+    [frame.x, frame.y, frame.width, frame.height].map((v) => v.toFixed(3)).join(' '),
+  );
   root.setAttribute('width', `${frame.pxWidth}px`);
   root.setAttribute('height', `${frame.pxHeight}px`);
   return new XMLSerializer().serializeToString(doc);
@@ -187,7 +195,10 @@ export async function renderRaster(svgText, { format, scale = 1, legendBox = nul
     context.drawImage(img, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise((resolve, reject) =>
       canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error('renderRaster: the browser could not encode the image.'))),
+        (b) =>
+          b
+            ? resolve(b)
+            : reject(new Error('renderRaster: the browser could not encode the image.')),
         type.mime,
         JPEG_QUALITY,
       ),
@@ -249,7 +260,10 @@ export function setPngDpi(bytes, dpi) {
   const chunk = new Uint8Array(21);
   const view = new DataView(chunk.buffer);
   view.setUint32(0, 9);
-  chunk.set([...'pHYs'].map((c) => c.charCodeAt(0)), 4);
+  chunk.set(
+    [...'pHYs'].map((c) => c.charCodeAt(0)),
+    4,
+  );
   view.setUint32(8, ppm);
   view.setUint32(12, ppm);
   chunk[16] = 1; // unit: metre
@@ -257,7 +271,11 @@ export function setPngDpi(bytes, dpi) {
 
   const chunks = pngChunks(bytes).filter((c) => c.type !== 'pHYs');
   if (chunks[0]?.type !== 'IHDR') throw new Error('setPngDpi: PNG does not start with IHDR.');
-  const parts = [bytes.subarray(0, PNG_SIGNATURE.length), bytes.subarray(chunks[0].start, chunks[0].end), chunk];
+  const parts = [
+    bytes.subarray(0, PNG_SIGNATURE.length),
+    bytes.subarray(chunks[0].start, chunks[0].end),
+    chunk,
+  ];
   for (const c of chunks.slice(1)) parts.push(bytes.subarray(c.start, c.end));
   return concat(parts);
 }
@@ -290,8 +308,24 @@ export function setJpegDpi(bytes, dpi) {
     return result;
   }
   const app0 = new Uint8Array([
-    0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01,
-    dpi >> 8, dpi & 0xff, dpi >> 8, dpi & 0xff, 0x00, 0x00,
+    0xff,
+    0xe0,
+    0x00,
+    0x10,
+    0x4a,
+    0x46,
+    0x49,
+    0x46,
+    0x00,
+    0x01,
+    0x01,
+    0x01,
+    dpi >> 8,
+    dpi & 0xff,
+    dpi >> 8,
+    dpi & 0xff,
+    0x00,
+    0x00,
   ]);
   return concat([bytes.subarray(0, 2), app0, bytes.subarray(2)]);
 }

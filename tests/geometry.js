@@ -6,8 +6,14 @@ const angleOf = (x, y) => normaliseAngle((Math.atan2(x - CENTRE.x, CENTRE.y - y)
 
 // Start and mid-angle of an annular sector path (M outer-start A … outer-end L …).
 export function pathSpan(d) {
-  const [x1, y1] = d.match(/^M([-\d.]+),([-\d.]+)/).slice(1).map(Number);
-  const [x2, y2] = d.match(/^M[^A]*A[^A]*? ([-\d.]+),([-\d.]+)[LZ]/).slice(1).map(Number);
+  const [x1, y1] = d
+    .match(/^M([-\d.]+),([-\d.]+)/)
+    .slice(1)
+    .map(Number);
+  const [x2, y2] = d
+    .match(/^M[^A]*A[^A]*? ([-\d.]+),([-\d.]+)[LZ]/)
+    .slice(1)
+    .map(Number);
   const start = angleOf(x1, y1);
   let end = angleOf(x2, y2);
   if (end < start) end += 360;
@@ -32,7 +38,9 @@ export function angleDiff(a, b) {
 export function textIsUpright(doc, id, mid) {
   const outward = mid - 90;
   const expected = normaliseAngle(mid) < 180 ? outward : outward + 180;
-  return ['label', 'number'].every((part) => angleDiff(textDirection(doc, `${id}-${part}`), expected) < 0.01);
+  return ['label', 'number'].every(
+    (part) => angleDiff(textDirection(doc, `${id}-${part}`), expected) < 0.01,
+  );
 }
 
 export const cid = (n) => `C${String(n).padStart(2, '0')}`;

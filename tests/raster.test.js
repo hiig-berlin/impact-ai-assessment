@@ -26,7 +26,11 @@ async function decode(blob) {
   const context = canvas.getContext('2d');
   context.drawImage(img, 0, 0);
   URL.revokeObjectURL(img.src);
-  return { width: canvas.width, height: canvas.height, pixel: (x, y) => [...context.getImageData(x, y, 1, 1).data] };
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    pixel: (x, y) => [...context.getImageData(x, y, 1, 1).data],
+  };
 }
 
 test('raster: square frame with 5 % margin at ×1, ×2, ×4', () => {
@@ -54,10 +58,18 @@ test('raster: legend frame keeps width and pie position, extends downwards', () 
   assertEqual([frame.x, frame.y], [square.x, square.y]);
   assertEqual(frame.pxWidth, 1080);
   const pxPerUnit = frame.pxWidth / frame.width;
-  assertClose(frame.pxHeight, Math.round((legendBox.y + legendBox.height - frame.y) * pxPerUnit + 54), 1);
+  assertClose(
+    frame.pxHeight,
+    Math.round((legendBox.y + legendBox.height - frame.y) * pxPerUnit + 54),
+    1,
+  );
   // A legend sticking out to the right widens the frame by the same margin.
   const wide = rasterFrame(1, { ...legendBox, width: legendBox.width + 1000 });
-  assertClose(wide.pxWidth, Math.round((legendBox.x + legendBox.width + 1000 - wide.x) * pxPerUnit + 54), 1);
+  assertClose(
+    wide.pxWidth,
+    Math.round((legendBox.x + legendBox.width + 1000 - wide.x) * pxPerUnit + 54),
+    1,
+  );
 });
 
 test('raster: fonts are embedded as base64 @font-face (PT Sans 400 and 700)', async () => {
@@ -67,7 +79,11 @@ test('raster: fonts are embedded as base64 @font-face (PT Sans 400 and 700)', as
   assertEqual(style.localName, 'style');
   const css = style.textContent;
   assertEqual((css.match(/@font-face/g) || []).length, 2);
-  assert(/font-family:'PT Sans';font-style:normal;font-weight:400;src:url\(data:font\/woff2;base64,d09GMg/.test(css));
+  assert(
+    /font-family:'PT Sans';font-style:normal;font-weight:400;src:url\(data:font\/woff2;base64,d09GMg/.test(
+      css,
+    ),
+  );
   assert(/font-weight:700;src:url\(data:font\/woff2;base64,d09GMg/.test(css));
   assertEqual(doc.documentElement.getAttribute('width'), '1080px');
   // The SVG downloads themselves don't embed the font.
@@ -75,7 +91,10 @@ test('raster: fonts are embedded as base64 @font-face (PT Sans 400 and 700)', as
 });
 
 test('raster: PNG is transparent, square and 72 dpi', async () => {
-  const blob = await renderRaster(file(files, 'clusters/impact.svg').svg, { format: 'png', scale: 1 });
+  const blob = await renderRaster(file(files, 'clusters/impact.svg').svg, {
+    format: 'png',
+    scale: 1,
+  });
   assertEqual(blob.type, 'image/png');
   const bytes = new Uint8Array(await blob.arrayBuffer());
   assertEqual(readPngDpi(bytes), { x: 2835, y: 2835, unit: 1 });
@@ -97,11 +116,20 @@ test('raster: JPG is white, legend files extended, 72 dpi', async () => {
   const image = await decode(blob);
   assertEqual(image.width, 1080);
   assert(image.height > 1080, `height ${image.height}`);
-  assert(image.pixel(2, 2).slice(0, 3).every((v) => v > 250), 'white corner');
+  assert(
+    image
+      .pixel(2, 2)
+      .slice(0, 3)
+      .every((v) => v > 250),
+    'white corner',
+  );
 });
 
 test('raster: ×2 doubles the side', async () => {
-  const blob = await renderRaster(file(files, 'slices/01-objective-realisation.svg').svg, { format: 'png', scale: 2 });
+  const blob = await renderRaster(file(files, 'slices/01-objective-realisation.svg').svg, {
+    format: 'png',
+    scale: 2,
+  });
   const image = await decode(blob);
   assertEqual([image.width, image.height], [2160, 2160]);
 });
@@ -113,7 +141,10 @@ test('raster: PNG pHYs chunk replaces an existing one; CRC is valid', () => {
     const out = new Uint8Array(12 + data.length);
     const view = new DataView(out.buffer);
     view.setUint32(0, data.length);
-    out.set([...type].map((c) => c.charCodeAt(0)), 4);
+    out.set(
+      [...type].map((c) => c.charCodeAt(0)),
+      4,
+    );
     out.set(data, 8);
     view.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
     return out;
@@ -122,7 +153,12 @@ test('raster: PNG pHYs chunk replaces an existing one; CRC is valid', () => {
   new DataView(phys.buffer).setUint32(0, 11811);
   new DataView(phys.buffer).setUint32(4, 11811);
   phys[8] = 1;
-  const parts = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', new Uint8Array(13)), chunk('pHYs', phys), chunk('IEND', new Uint8Array(0))];
+  const parts = [
+    new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', new Uint8Array(13)),
+    chunk('pHYs', phys),
+    chunk('IEND', new Uint8Array(0)),
+  ];
   const png = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let offset = 0;
   for (const p of parts) {
@@ -133,7 +169,10 @@ test('raster: PNG pHYs chunk replaces an existing one; CRC is valid', () => {
   assertEqual(result.length, png.length);
   assertEqual(readPngDpi(result), { x: 2835, y: 2835, unit: 1 });
   const crcOffset = 8 + 25 + 8 + 9;
-  assertEqual(new DataView(result.buffer).getUint32(crcOffset), crc32(result.subarray(8 + 25 + 4, crcOffset)));
+  assertEqual(
+    new DataView(result.buffer).getUint32(crcOffset),
+    crc32(result.subarray(8 + 25 + 4, crcOffset)),
+  );
 });
 
 test('raster: JPEG without JFIF gets an APP0 segment', () => {

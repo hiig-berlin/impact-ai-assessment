@@ -21,7 +21,10 @@ test('files: complete list with names from §6.1–§6.3', () => {
     'scores/2-weak.svg',
     ...CRITERIA.map((c) => `slices/${c.slug}.svg`),
   ];
-  assertEqual(original.map((f) => f.path), expected);
+  assertEqual(
+    original.map((f) => f.path),
+    expected,
+  );
   assert(original.every((f) => f.legend === f.path.includes('-legend')));
 });
 
@@ -55,7 +58,14 @@ test('files: layer names of clusters and criteria', () => {
     '05 Harm-management',
   ]);
   assertEqual([...impact.getElementById('C01').children].map(layerName), [
-    'Wedge', 'Rating 1', 'Rating 2', 'Rating 3', 'Rating 4', 'Rating 5', 'Number', 'Label',
+    'Wedge',
+    'Rating 1',
+    'Rating 2',
+    'Rating 3',
+    'Rating 4',
+    'Rating 5',
+    'Number',
+    'Label',
   ]);
   const social = file(original, 'clusters/social-sustainability.svg').doc;
   assertEqual(layerName(social.getElementById('Social-Sustainability')), 'Social Sustainability');
@@ -78,16 +88,29 @@ test('files: crop, contents, centre and legend per file type', () => {
   }
   for (const category of CATEGORIES) {
     const doc = file(original, `clusters/${category.slug}-centre.svg`).doc;
-    assertEqual([...doc.getElementById('Centre').children].map((g) => g.id), [`Centre-${category.id}`]);
+    assertEqual(
+      [...doc.getElementById('Centre').children].map((g) => g.id),
+      [`Centre-${category.id}`],
+    );
     const numbers = [...doc.querySelectorAll('#Diagram > g > g')].map((g) => Number(g.id.slice(1)));
-    assertEqual(numbers, CRITERIA.filter((c) => c.category.slug === category.slug).map((c) => c.number));
+    assertEqual(
+      numbers,
+      CRITERIA.filter((c) => c.category.slug === category.slug).map((c) => c.number),
+    );
   }
   for (const score of SCORES.filter((s) => s.score > 1)) {
     const doc = file(original, `scores/${score.slug}.svg`).doc;
     const numbers = [...doc.querySelectorAll('#Diagram > g > g')].map((g) => Number(g.id.slice(1)));
-    assertEqual(numbers, exampleRatings.filter((r) => r.score === score.score).map((r) => r.number), score.name);
+    assertEqual(
+      numbers,
+      exampleRatings.filter((r) => r.score === score.score).map((r) => r.number),
+      score.name,
+    );
   }
-  assert(!original.some((f) => f.path === 'scores/1-insufficient.svg'), 'no file for a score that does not occur');
+  assert(
+    !original.some((f) => f.path === 'scores/1-insufficient.svg'),
+    'no file for a score that does not occur',
+  );
 });
 
 test('original position: clusters and slices keep their category-overview position', () => {
@@ -117,7 +140,11 @@ test('original position: score files keep their score-overview position', () => 
         const el = doc.getElementById(`${g.id}-${part}`);
         const ref = overview.getElementById(`${g.id}-${part}`);
         for (const attr of ['d', 'transform', 'x']) {
-          assertEqual(el.getAttribute(attr), ref.getAttribute(attr), `${f.path} ${g.id}-${part} ${attr}`);
+          assertEqual(
+            el.getAttribute(attr),
+            ref.getAttribute(attr),
+            `${f.path} ${g.id}-${part} ${attr}`,
+          );
         }
       }
     }
@@ -134,7 +161,10 @@ for (const startAngle of [0, 270, 7]) {
         const span = wedgeSpan(doc, g.id);
         assertClose(span.width, 15, 0.01);
         const diff = Math.abs(normaliseAngle(span.start - (startAngle + i * 15) + 180) - 180);
-        assert(diff < 0.01, `${f.path} ${g.id}: starts at ${span.start}, expected ${startAngle + i * 15}`);
+        assert(
+          diff < 0.01,
+          `${f.path} ${g.id}: starts at ${span.start}, expected ${startAngle + i * 15}`,
+        );
         assert(textIsUpright(doc, g.id, span.mid), `${f.path} ${g.id}: text upright`);
       });
     }
@@ -146,8 +176,14 @@ for (const startAngle of [0, 270, 7]) {
 }
 
 test('start angle 270°: Impact starts at 9 o’clock and runs over the top', () => {
-  const doc = file(generateFiles(prepared, { piePosition: 'start', startAngle: 270 }), 'clusters/impact.svg').doc;
-  assertEqual([1, 2, 3, 4, 5].map((n) => Math.round(wedgeSpan(doc, cid(n)).start)), [270, 285, 300, 315, 330]);
+  const doc = file(
+    generateFiles(prepared, { piePosition: 'start', startAngle: 270 }),
+    'clusters/impact.svg',
+  ).doc;
+  assertEqual(
+    [1, 2, 3, 4, 5].map((n) => Math.round(wedgeSpan(doc, cid(n)).start)),
+    [270, 285, 300, 315, 330],
+  );
 });
 
 test('start angle: centre sector rotates with the cluster, icon moves but stays upright', () => {
@@ -160,7 +196,12 @@ test('start angle: centre sector rotates with the cluster, icon moves but stays 
   assertClose(span.start, 270, 0.01);
   assertClose(span.width, 60, 0.01);
   const icon = (d) => d.querySelector('#Centre-Governance > g');
-  const t = (d) => icon(d).getAttribute('transform').match(/translate\(([-\d.]+),([-\d.]+)\)/).slice(1).map(Number);
+  const t = (d) =>
+    icon(d)
+      .getAttribute('transform')
+      .match(/translate\(([-\d.]+),([-\d.]+)\)/)
+      .slice(1)
+      .map(Number);
   const from = polar(ICON_RADIUS, 105);
   const to = polar(ICON_RADIUS, 300);
   assertClose(t(doc)[0] - t(before)[0], to.x - from.x, 0.002);
@@ -175,14 +216,22 @@ test('start angle: centre sector rotates with the cluster, icon moves but stays 
 
 test('start angle: invalid values throw', async () => {
   for (const startAngle of [-1, 360, 4.5, '90']) {
-    await assertThrows(() => generateFiles(prepared, { piePosition: 'start', startAngle }), /start angle/);
+    await assertThrows(
+      () => generateFiles(prepared, { piePosition: 'start', startAngle }),
+      /start angle/,
+    );
   }
 });
 
 test('CSV name changes label and layer name in all outputs, not file names', () => {
-  const renamed = exampleRatings.map((r) => (r.number === 7 ? { ...r, name: 'Responsibility & oversight' } : r));
+  const renamed = exampleRatings.map((r) =>
+    r.number === 7 ? { ...r, name: 'Responsibility & oversight' } : r,
+  );
   const files = generateFiles(base(renamed));
-  assertEqual(files.map((f) => f.path), original.map((f) => f.path));
+  assertEqual(
+    files.map((f) => f.path),
+    original.map((f) => f.path),
+  );
   for (const f of files) {
     const doc = parseSvg(f.svg);
     const group = doc.getElementById('C07');

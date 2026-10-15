@@ -161,7 +161,8 @@ export function readTemplate(svgText) {
     }
     const sector = childElements(group).find((el) => el.localName === 'path');
     const icon = childElements(group).find((el) => el.localName === 'g');
-    if (!sector || !icon) throw templateError(`#Centre-${category.id} needs a sector path and an icon group.`);
+    if (!sector || !icon)
+      throw templateError(`#Centre-${category.id} needs a sector path and an icon group.`);
     sectors.set(category.id, { group, sector, icon });
   }
   if (childElements(centre).length !== categories.length) {
@@ -211,7 +212,14 @@ export function rotationMatrix(angle) {
   const a = toRadians(angle);
   const cos = Math.cos(a);
   const sin = Math.sin(a);
-  return [cos, sin, -sin, cos, CENTRE.x - CENTRE.x * cos + CENTRE.y * sin, CENTRE.y - CENTRE.x * sin - CENTRE.y * cos];
+  return [
+    cos,
+    sin,
+    -sin,
+    cos,
+    CENTRE.x - CENTRE.x * cos + CENTRE.y * sin,
+    CENTRE.y - CENTRE.x * sin - CENTRE.y * cos,
+  ];
 }
 
 // m1 × m2 (apply m2 first, then m1).
@@ -256,17 +264,24 @@ export function rotatePath(d, angle) {
   return commands
     .map((command) => {
       const type = command[0];
-      const args = command.slice(1).trim().split(/[\s,]+/).filter(Boolean);
+      const args = command
+        .slice(1)
+        .trim()
+        .split(/[\s,]+/)
+        .filter(Boolean);
       const point = (x, y) => {
         const p = rotatePoint(Number(x), Number(y), angle);
         return `${fmt3(p.x)},${fmt3(p.y)}`;
       };
-      if ((type === 'M' || type === 'L') && args.length === 2) return type + point(args[0], args[1]);
+      if ((type === 'M' || type === 'L') && args.length === 2)
+        return type + point(args[0], args[1]);
       if (type === 'A' && args.length === 7) {
         return `A${args[0]},${args[1]} ${args[2]} ${args[3]},${args[4]} ${point(args[5], args[6])}`;
       }
       if (type === 'Z' && args.length === 0) return 'Z';
-      throw new Error(`Template: unsupported path command "${command}" (only absolute M, L, A, Z).`);
+      throw new Error(
+        `Template: unsupported path command "${command}" (only absolute M, L, A, Z).`,
+      );
     })
     .join('');
 }
@@ -295,7 +310,8 @@ export async function createMeasurer(template, doc = document) {
 
   const svg = doc.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('aria-hidden', 'true');
-  svg.style.cssText = 'position:absolute;left:-10000px;top:0;width:10px;height:10px;visibility:hidden;';
+  svg.style.cssText =
+    'position:absolute;left:-10000px;top:0;width:10px;height:10px;visibility:hidden;';
   const first = template.criteria.get(1);
   const texts = {};
   for (const [kind, source] of [
@@ -361,7 +377,10 @@ export function textSide(start) {
 function setStyleProperty(el, name, value) {
   const style = el.getAttribute('style') || '';
   const pattern = new RegExp(`(^|;)(\\s*${name}\\s*:)\\s*[^;]+`);
-  el.setAttribute('style', pattern.test(style) ? style.replace(pattern, `$1$2${value}`) : `${name}:${value};${style}`);
+  el.setAttribute(
+    'style',
+    pattern.test(style) ? style.replace(pattern, `$1$2${value}`) : `${name}:${value};${style}`,
+  );
 }
 
 function setLayerName(el, name) {
@@ -402,8 +421,14 @@ export function prepare(template, ratings, measurer) {
     const c = template.criteria.get(TEXT_REFERENCE[side].number);
     return {
       midAngle: TEXT_REFERENCE[side].midAngle,
-      label: { matrix: parseMatrix(c.labelText.getAttribute('transform')), y: c.labelText.getAttribute('y') },
-      number: { matrix: parseMatrix(c.numberText.getAttribute('transform')), y: c.numberText.getAttribute('y') },
+      label: {
+        matrix: parseMatrix(c.labelText.getAttribute('transform')),
+        y: c.labelText.getAttribute('y'),
+      },
+      number: {
+        matrix: parseMatrix(c.numberText.getAttribute('transform')),
+        y: c.numberText.getAttribute('y'),
+      },
     };
   };
   return {
@@ -420,7 +445,10 @@ export function prepare(template, ratings, measurer) {
 function placeCriterion(base, doc, number, start) {
   const id = criterionId(number);
   const delta = start - templateAngle(number);
-  for (const suffix of ['wedge', ...Array.from({ length: RING_COUNT }, (_, i) => `rating${i + 1}`)]) {
+  for (const suffix of [
+    'wedge',
+    ...Array.from({ length: RING_COUNT }, (_, i) => `rating${i + 1}`),
+  ]) {
     const path = doc.getElementById(`${id}-${suffix}`);
     path.setAttribute('d', rotatePath(path.getAttribute('d'), delta));
   }
@@ -456,8 +484,11 @@ function keepCentreSector(base, doc, categoryId, delta) {
     const mid = (templateAngle(category.first) + templateAngle(category.last + 1)) / 2;
     const from = polar(ICON_RADIUS, mid);
     const to = polar(ICON_RADIUS, mid + delta);
-    const match = /^\s*translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)\s*$/.exec(icon.getAttribute('transform') || '');
-    if (!match) throw new Error(`Template: centre icon of ${categoryId} needs a translate(…) transform.`);
+    const match = /^\s*translate\(\s*([-\d.]+)[\s,]+([-\d.]+)\s*\)\s*$/.exec(
+      icon.getAttribute('transform') || '',
+    );
+    if (!match)
+      throw new Error(`Template: centre icon of ${categoryId} needs a translate(…) transform.`);
     icon.setAttribute(
       'transform',
       `translate(${fmt3(Number(match[1]) + to.x - from.x)},${fmt3(Number(match[2]) + to.y - from.y)})`,
@@ -522,7 +553,8 @@ export function buildDocument(base, spec) {
 
   const centre = doc.getElementById('Centre');
   if (!spec.centre) centre.remove();
-  else if (spec.centre !== 'all') keepCentreSector(base, doc, spec.centre.categoryId, spec.centre.delta);
+  else if (spec.centre !== 'all')
+    keepCentreSector(base, doc, spec.centre.categoryId, spec.centre.delta);
 
   if (!spec.legend) doc.getElementById('Legend').remove();
   if (spec.crop) root.setAttribute('viewBox', `${CROP.x} ${CROP.y} ${CROP.size} ${CROP.size}`);
@@ -541,9 +573,9 @@ function categoryOrderGroups(base, angleOf, numbers = null) {
       id: category.id,
       name: category.name,
       criteria: new Map(
-        CRITERIA.filter((c) => c.category.id === category.id && (!numbers || numbers.includes(c.number))).map(
-          (c) => [c.number, angleOf(c.number)],
-        ),
+        CRITERIA.filter(
+          (c) => c.category.id === category.id && (!numbers || numbers.includes(c.number)),
+        ).map((c) => [c.number, angleOf(c.number)]),
       ),
     }))
     .filter((group) => group.criteria.size > 0);
@@ -605,12 +637,17 @@ export function generateFiles(base, options = {}) {
   const scoreGroups = scores.map((s) => ({ id: s.name, name: s.name, criteria: s.angles }));
   const separators = scores.length > 1 ? scores.map((s) => s.start) : [];
   for (const legend of [false, true]) {
-    add(legend ? 'overview-scores-legend.svg' : 'overview-scores.svg', 'overview', 'Overview by score', {
-      groups: scoreGroups,
-      centre: null,
-      legend,
-      separators,
-    });
+    add(
+      legend ? 'overview-scores-legend.svg' : 'overview-scores.svg',
+      'overview',
+      'Overview by score',
+      {
+        groups: scoreGroups,
+        centre: null,
+        legend,
+        separators,
+      },
+    );
   }
 
   for (const category of base.template.categories) {
