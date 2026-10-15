@@ -91,7 +91,13 @@ test('overview: ring colours follow the scores', () => {
 test('score overview: order matches §9, blank centre, separators', () => {
   assertEqual(
     scoreClusters(exampleRatings).map((c) => c.criteria),
-    [[2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24], [3, 8, 17, 19], [1, 9, 11, 13, 16], [7]],
+    [
+      [2, 5, 10, 12, 15, 18, 20, 22, 23],
+      [3, 8, 17],
+      [1, 9, 11, 13, 16],
+      [4, 7, 19, 21],
+      [6, 14, 24],
+    ],
   );
   const { doc } = file(files, 'overview-scores.svg');
   const diagram = doc.getElementById('Diagram');
@@ -103,20 +109,21 @@ test('score overview: order matches §9, blank centre, separators', () => {
       ['Satisfactory', 'Satisfactory'],
       ['Ambivalent', 'Ambivalent'],
       ['Weak', 'Weak'],
+      ['Insufficient', 'Insufficient'],
     ],
   );
   const order = clusters.flatMap((g) => [...g.children].map((c) => Number(c.id.slice(1))));
   assertEqual(
     order,
-    [2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24, 3, 8, 17, 19, 1, 9, 11, 13, 16, 7],
+    [2, 5, 10, 12, 15, 18, 20, 22, 23, 3, 8, 17, 1, 9, 11, 13, 16, 4, 7, 19, 21, 6, 14, 24],
   );
   order.forEach((n, i) =>
     assertClose(wedgeMidAngle(doc, `C${String(n).padStart(2, '0')}`), i * 15 + 7.5, 0.01, `C${n}`),
   );
   assert(!doc.getElementById('Centre'), 'blank centre');
   const separators = [...doc.getElementById('Separators').children];
-  assertEqual(separators.length, 4);
-  // Boundaries at 0°, 14·15°, 18·15°, 23·15°.
+  assertEqual(separators.length, 5);
+  // Boundaries at 0°, 9·15°, 12·15°, 17·15°, 21·15°.
   const angles = separators.map((p) => {
     const [, , , x2, y2] = p
       .getAttribute('d')
@@ -125,7 +132,7 @@ test('score overview: order matches §9, blank centre, separators', () => {
       .map(Number);
     return Math.round(normaliseAngle((Math.atan2(x2 - CENTRE.x, CENTRE.y - y2) * 180) / Math.PI));
   });
-  assertEqual(angles, [0, 210, 270, 345]);
+  assertEqual(angles, [0, 135, 180, 255, 315]);
   assert(/stroke-width:18px/.test(separators[0].getAttribute('style')));
 });
 

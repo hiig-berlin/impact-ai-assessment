@@ -2,7 +2,7 @@ import { test, assert, assertEqual } from './harness.js';
 import { decodeCsv, detectDelimiter, formatMessage, parseCsv, readRatings } from '../csv.js';
 import { CRITERIA } from '../names.js';
 
-const SAMPLE_SCORES = [3, 5, 4, 5, 5, 5, 2, 4, 3, 5, 3, 5, 3, 5, 5, 3, 4, 5, 4, 5, 5, 5, 5, 5];
+const SAMPLE_SCORES = [3, 5, 4, 2, 5, 1, 2, 4, 3, 5, 3, 5, 3, 1, 5, 3, 4, 5, 2, 5, 2, 5, 5, 1];
 
 function quote(value, delimiter) {
   return /["\r\n]/.test(value) || value.includes(delimiter)

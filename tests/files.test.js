@@ -27,6 +27,7 @@ test('files: complete list with names from §6.1–§6.3', () => {
     'scores/4-satisfactory.svg',
     'scores/3-ambivalent.svg',
     'scores/2-weak.svg',
+    'scores/1-insufficient.svg',
     ...CRITERIA.map((c) => `slices/${c.slug}.svg`),
   ];
   assertEqual(
@@ -108,7 +109,7 @@ test('files: crop, contents, centre and legend per file type', () => {
       CRITERIA.filter((c) => c.category.slug === category.slug).map((c) => c.number),
     );
   }
-  for (const score of SCORES.filter((s) => s.score > 1)) {
+  for (const score of SCORES) {
     const doc = file(original, `scores/${score.slug}.svg`).doc;
     const numbers = [...doc.querySelectorAll('#Diagram > g > g')].map((g) => Number(g.id.slice(1)));
     assertEqual(
@@ -117,10 +118,13 @@ test('files: crop, contents, centre and legend per file type', () => {
       score.name,
     );
   }
-  assert(
-    !original.some((f) => f.path === 'scores/1-insufficient.svg'),
-    'no file for a score that does not occur',
-  );
+});
+
+test('files: no score file for a score that does not occur', () => {
+  const noInsufficient = exampleRatings.map((r) => (r.score === 1 ? { ...r, score: 2 } : r));
+  const paths = generateFiles(base(noInsufficient)).map((f) => f.path);
+  assert(!paths.includes('scores/1-insufficient.svg'), 'no 1-insufficient file');
+  assert(paths.includes('scores/2-weak.svg'), '2-weak file');
 });
 
 test('original position: clusters and slices keep their category-overview position', () => {
