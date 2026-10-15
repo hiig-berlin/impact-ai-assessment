@@ -1,6 +1,6 @@
 import { test, assert, assertClose, assertEqual } from './harness.js';
 import { base, file } from './fixture.js';
-import { CROP, generateFiles } from '../pie.js';
+import { CROP, LEGEND_POSITIONS, generateFiles, legendLayout } from '../pie.js';
 import {
   crc32,
   measureLegend,
@@ -15,6 +15,7 @@ import {
 
 const files = generateFiles(base());
 const legendBox = await measureLegend(file(files, 'overview-legend.svg').svg);
+const layoutOf = (path) => file(files, path).layout;
 
 async function decode(blob) {
   const img = new Image();
@@ -52,24 +53,43 @@ test('raster: legend box is measured tightly below the chart', () => {
   assert(legendBox.y > 2500 && legendBox.y + legendBox.height < 3508, JSON.stringify(legendBox));
 });
 
-test('raster: legend frame keeps width and pie position, extends downwards', () => {
+test('raster: legend frames – A4 for top/bottom, 16:9 for left/right, same pie size (§5.2)', () => {
   const square = rasterFrame(1);
-  const frame = rasterFrame(1, legendBox);
-  assertEqual([frame.x, frame.y], [square.x, square.y]);
-  assertEqual(frame.pxWidth, 1080);
-  const pxPerUnit = frame.pxWidth / frame.width;
-  assertClose(
-    frame.pxHeight,
-    Math.round((legendBox.y + legendBox.height - frame.y) * pxPerUnit + 54),
-    1,
-  );
-  // A legend sticking out to the right widens the frame by the same margin.
-  const wide = rasterFrame(1, { ...legendBox, width: legendBox.width + 1000 });
-  assertClose(
-    wide.pxWidth,
-    Math.round((legendBox.x + legendBox.width + 1000 - wide.x) * pxPerUnit + 54),
-    1,
-  );
+  const pxPerUnit = square.pxWidth / square.width;
+  for (const scale of [1, 2, 4]) {
+    for (const position of LEGEND_POSITIONS) {
+      const frame = rasterFrame(scale, legendLayout(legendBox, position));
+      const expected =
+        position === 'left' || position === 'right'
+          ? [1920 * scale, 1080 * scale]
+          : [1080 * scale, Math.round(1080 * scale * Math.SQRT2)];
+      assertEqual([frame.pxWidth, frame.pxHeight], expected, `${position} ×${scale}`);
+      // Same scale as the square image, so the pie has the same size in px.
+      assertClose(frame.pxWidth / frame.width, pxPerUnit * scale, 1e-9, position);
+    }
+  }
+  // Bottom keeps the square frame's top, top keeps its bottom.
+  const bottom = rasterFrame(1, legendLayout(legendBox, 'bottom'));
+  const top = rasterFrame(1, legendLayout(legendBox, 'top'));
+  assertClose(bottom.y, square.y, 1e-9);
+  assertClose(top.y + top.height, square.y + square.height, 1);
+});
+
+test('raster: legend fits inside its frame for every position', () => {
+  for (const position of LEGEND_POSITIONS) {
+    const layout = legendLayout(legendBox, position);
+    const frame = rasterFrame(1, layout);
+    const box = layout.box;
+    assert(
+      box.x >= frame.x &&
+        box.y >= frame.y &&
+        box.x + box.width <= frame.x + frame.width &&
+        box.y + box.height <= frame.y + frame.height,
+      `${position}: ${JSON.stringify(box)} in ${JSON.stringify(frame)}`,
+    );
+    // The crop square (the pie) is inside the frame too.
+    assert(frame.x <= CROP.x && frame.x + frame.width >= CROP.x + CROP.size, position);
+  }
 });
 
 test('raster: fonts are embedded as base64 @font-face (PT Sans 400 and 700)', async () => {
@@ -105,17 +125,16 @@ test('raster: PNG is transparent, square and 72 dpi', async () => {
   assertEqual(image.pixel(620, 300)[3], 255, 'opaque wedge');
 });
 
-test('raster: JPG is white, legend files extended, 72 dpi', async () => {
+test('raster: JPG is white, legend files A4, 72 dpi', async () => {
   const blob = await renderRaster(file(files, 'overview-scores-legend.svg').svg, {
     format: 'jpg',
     scale: 1,
-    legendBox,
+    layout: layoutOf('overview-scores-legend.svg'),
   });
   assertEqual(blob.type, 'image/jpeg');
   assertEqual(readJpegDpi(new Uint8Array(await blob.arrayBuffer())), { x: 72, y: 72, unit: 1 });
   const image = await decode(blob);
-  assertEqual(image.width, 1080);
-  assert(image.height > 1080, `height ${image.height}`);
+  assertEqual([image.width, image.height], [1080, 1527]);
   assert(
     image
       .pixel(2, 2)

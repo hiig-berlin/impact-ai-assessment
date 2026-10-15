@@ -158,7 +158,7 @@ Only the two overviews have a legend (`overview-legend`, `overview-scores-legend
   | top | A4 portrait | 2481 × 3508, shifted up so the legend has the same distance from the page top as the chart has in the bottom layout | 1080 × 1527 |
   | left, right | 16:9 landscape | 4741 × 2667: the crop square plus the raster margin (§5.1) in height | 1920 × 1080 |
 
-  ×2 and ×4 scale these sizes. In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group; in the A4 shape, the chart keeps its horizontal position from the template.
+  ×2 and ×4 scale these sizes (A4: 2160 × 3055 and 4320 × 6109, rounded). In every shape the pie has the same size as in the square images (the 2400 crop at 90 % of 1080 px), so pies match across all files. In the 16:9 shape, the chart and the legend are centred horizontally as one group; in the A4 shape, the chart keeps its horizontal position from the template.
 - **PNG/JPG framing** for the `-legend` files (replaces the "extended canvas" rule of version 1). The frame starts from the square raster frame of §5.1 (crop square plus 5 % margin):
   - A4 (top, bottom): same width, extended to the A4 ratio (height = width × √2), downwards for bottom and upwards for top;
   - 16:9 (left, right): same height, extended to 16:9 width, with chart and legend centred horizontally as in the SVG.

@@ -23,6 +23,14 @@ export const HALF_CIRCLE = 180;
 
 // Square crop around the chart centre for cluster, score and slice files (§5).
 export const CROP = { x: 40.157, y: 272.634, size: 2400 };
+// The template's A4 page (viewBox of template.svg).
+export const PAGE = { width: 2481, height: 3508 };
+// Raster margin around the crop square, as a share of the image side (§5.1).
+export const FRAME_MARGIN_RATIO = 0.05;
+// Legend positions for the two -legend overviews (§5.2).
+export const LEGEND_POSITIONS = ['left', 'right', 'top', 'bottom'];
+export const DEFAULT_LEGEND_POSITION = 'bottom';
+export const WIDE_ASPECT = 16 / 9;
 
 // Radius of the centre icons' midpoint in their sector (§6).
 export const ICON_RADIUS = 102;
@@ -563,7 +571,21 @@ export function buildDocument(base, spec) {
   else if (spec.centre !== 'all')
     keepCentreSector(base, doc, spec.centre.categoryId, spec.centre.delta);
 
-  if (!spec.legend) doc.getElementById('Legend').remove();
+  const legend = doc.getElementById('Legend');
+  if (!spec.legend) {
+    legend.remove();
+  } else if (spec.legend.position !== 'bottom') {
+    // Move the legend as a whole; it is otherwise left as it is (§5.2).
+    const { dx, dy, viewBox } = spec.legend;
+    legend.setAttribute(
+      'transform',
+      `translate(${fmt3(dx)},${fmt3(dy)}) ${legend.getAttribute('transform') || ''}`.trim(),
+    );
+    root.setAttribute(
+      'viewBox',
+      [viewBox.x, viewBox.y, viewBox.width, viewBox.height].map(fmt3).join(' '),
+    );
+  }
   if (spec.crop) root.setAttribute('viewBox', `${CROP.x} ${CROP.y} ${CROP.size} ${CROP.size}`);
   return doc;
 }
@@ -611,6 +633,72 @@ export function serialize(doc) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n${serializeElement(doc.documentElement)}\n`;
 }
 
+// --- Legend position (§5.2) ---------------------------------------------------
+
+// The square frame around the crop square: crop plus FRAME_MARGIN_RATIO of the frame side on each side.
+export function squareFrame() {
+  const side = CROP.size / (1 - 2 * FRAME_MARGIN_RATIO);
+  const margin = (side - CROP.size) / 2;
+  return { x: CROP.x - margin, y: CROP.y - margin, width: side, height: side, margin };
+}
+
+/**
+ * Where the legend goes and which page it gets (§5.2).
+ * @param {{x,y,width,height}|null} box the legend's tight bounding box in the template
+ *   (bottom position); not needed for 'bottom'
+ * @param {string} position 'left' | 'right' | 'top' | 'bottom'
+ * @returns {{ position, shape: 'a4'|'wide', dx, dy, box, viewBox: {x,y,width,height} }}
+ */
+export function legendLayout(box, position = DEFAULT_LEGEND_POSITION) {
+  if (!LEGEND_POSITIONS.includes(position)) {
+    throw new Error(`legendLayout: unknown legend position "${position}".`);
+  }
+  if (position === 'bottom') {
+    return {
+      position,
+      shape: 'a4',
+      dx: 0,
+      dy: 0,
+      box,
+      viewBox: { x: 0, y: 0, width: PAGE.width, height: PAGE.height },
+    };
+  }
+  if (!box) throw new Error(`legendLayout: the legend box is needed for position "${position}".`);
+  const crop = { left: CROP.x, top: CROP.y, right: CROP.x + CROP.size, bottom: CROP.y + CROP.size };
+  // In the template the legend sits below the crop square (gap, negative = overlap)
+  // and is inset from its right edge; the other sides keep both distances, turned.
+  const gap = box.y - crop.bottom;
+  const inset = crop.right - (box.x + box.width);
+  let { x, y } = box;
+  if (position === 'top') {
+    y = crop.top - gap - box.height;
+  } else {
+    y = crop.bottom - inset - box.height;
+    x = position === 'right' ? crop.right + gap : crop.left - gap - box.width;
+  }
+  const moved = { x, y, width: box.width, height: box.height };
+  let viewBox;
+  if (position === 'top') {
+    // A4 page: the legend is as far from the page top as the chart is in the bottom layout.
+    viewBox = { x: 0, y: moved.y - CROP.y, width: PAGE.width, height: PAGE.height };
+  } else {
+    // 16:9 page: the square frame's height; chart and legend centred as one group.
+    const frame = squareFrame();
+    const width = frame.height * WIDE_ASPECT;
+    const left = Math.min(crop.left, moved.x);
+    const right = Math.max(crop.right, moved.x + moved.width);
+    viewBox = { x: (left + right) / 2 - width / 2, y: frame.y, width, height: frame.height };
+  }
+  return {
+    position,
+    shape: position === 'top' ? 'a4' : 'wide',
+    dx: moved.x - box.x,
+    dy: moved.y - box.y,
+    box: moved,
+    viewBox,
+  };
+}
+
 // --- Output files (§5) --------------------------------------------------------
 
 function categoryOrderGroups(base, angleOf, numbers = null) {
@@ -647,6 +735,9 @@ export const DEFAULT_START_ANGLE = 270;
  * @param {object} [options]
  * @param {'original'|'start'} [options.piePosition] cluster and score files (§7.1)
  * @param {number} [options.startAngle] whole number 0–359, for 'start'
+ * @param {string} [options.legendPosition] 'left' | 'right' | 'top' | 'bottom' (default)
+ * @param {object} [options.legendBox] the template legend's bounding box (raster.js
+ *   measureLegend), needed for positions other than bottom
  */
 export function generateFiles(base, options = {}) {
   const piePosition = options.piePosition ?? PIE_POSITION.original;
@@ -658,6 +749,10 @@ export function generateFiles(base, options = {}) {
     throw new Error(`generateFiles: start angle must be a whole number 0–359, got ${startAngle}.`);
   }
   const ownLayout = piePosition === PIE_POSITION.start;
+  const layout = legendLayout(
+    options.legendBox ?? null,
+    options.legendPosition ?? DEFAULT_LEGEND_POSITION,
+  );
 
   const files = [];
   const add = (path, kind, name, spec) =>
@@ -666,6 +761,7 @@ export function generateFiles(base, options = {}) {
       kind,
       name,
       legend: Boolean(spec.legend),
+      layout: spec.legend || null,
       svg: serialize(buildDocument(base, spec)),
     });
 
@@ -675,7 +771,7 @@ export function generateFiles(base, options = {}) {
     add(legend ? 'overview-legend.svg' : 'overview.svg', 'overview', 'Overview', {
       groups: categoryGroups,
       centre: 'all',
-      legend,
+      legend: legend ? layout : null,
     });
   }
 
@@ -690,7 +786,7 @@ export function generateFiles(base, options = {}) {
       {
         groups: scoreGroups,
         centre: null,
-        legend,
+        legend: legend ? layout : null,
         separators,
       },
     );

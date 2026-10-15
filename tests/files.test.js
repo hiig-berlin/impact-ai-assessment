@@ -9,6 +9,8 @@ import {
   normaliseAngle,
   polar,
   serializeElement,
+  LEGEND_POSITIONS,
+  legendLayout,
 } from '../pie.js';
 import { CATEGORIES, CRITERIA, SCORES } from '../names.js';
 
@@ -266,5 +268,73 @@ test('serializer: escapes text and attributes, keeps namespaces, self-closes emp
     serializeElement(doc.documentElement),
     '<svg xmlns="http://www.w3.org/2000/svg" xmlns:affinity="https://www.affinity.studio/">' +
       '<g affinity:id="a &amp; &quot;b&quot;"><text>x &lt; y &amp; z</text><path d="M0,0"/></g></svg>',
+  );
+});
+
+test('legend position: only the two -legend overviews have a legend; bottom is unchanged', async () => {
+  const { measureLegend } = await import('../raster.js');
+  const legendBox = await measureLegend(file(original, 'overview-legend.svg').svg);
+  const bottom = generateFiles(prepared, { legendPosition: 'bottom', legendBox });
+  assertEqual(
+    bottom.map((f) => f.svg),
+    original.map((f) => f.svg),
+  );
+  for (const position of LEGEND_POSITIONS) {
+    const files = generateFiles(prepared, { legendPosition: position, legendBox });
+    for (const f of files) {
+      const hasLegend = Boolean(parseSvg(f.svg).getElementById('Legend'));
+      assertEqual(hasLegend, f.path.endsWith('-legend.svg'), `${position} ${f.path}`);
+      assertEqual(Boolean(f.layout), hasLegend, `${position} ${f.path} layout`);
+    }
+    // Files without legend never change with the legend position.
+    for (const f of files.filter((x) => !x.legend)) {
+      assertEqual(f.svg, original.find((o) => o.path === f.path).svg, `${position} ${f.path}`);
+    }
+  }
+});
+
+test('legend position: legend moved beside, above or below the crop square; page shape', async () => {
+  const { measureLegend } = await import('../raster.js');
+  const box = await measureLegend(file(original, 'overview-legend.svg').svg);
+  const crop = { left: CROP.x, top: CROP.y, right: CROP.x + CROP.size, bottom: CROP.y + CROP.size };
+  const gap = box.y - crop.bottom;
+  const inset = crop.right - (box.x + box.width);
+  const near = (a, b, what) => assertClose(a, b, 1e-6, what);
+  const right = legendLayout(box, 'right').box;
+  near(right.x, crop.right + gap, 'right x');
+  near(right.y + right.height, crop.bottom - inset, 'right bottom');
+  const left = legendLayout(box, 'left').box;
+  near(left.x + left.width, crop.left - gap, 'left x');
+  near(left.y + left.height, crop.bottom - inset, 'left bottom');
+  const top = legendLayout(box, 'top').box;
+  near(top.y + top.height, crop.top - gap, 'top y');
+  near(top.x, box.x, 'top x');
+  assertEqual(legendLayout(box, 'bottom').box, box);
+  // Page shapes: A4 for top/bottom, 16:9 for left/right.
+  for (const position of LEGEND_POSITIONS) {
+    const { shape, viewBox } = legendLayout(box, position);
+    const ratio = viewBox.height / viewBox.width;
+    if (position === 'top' || position === 'bottom') {
+      assertEqual(shape, 'a4');
+      assertEqual([viewBox.width, viewBox.height], [2481, 3508]);
+    } else {
+      assertEqual(shape, 'wide');
+      assertClose(ratio, 9 / 16, 1e-9, position);
+    }
+  }
+  // The SVG moves the legend with a translate and uses the layout's viewBox.
+  const files = generateFiles(prepared, { legendPosition: 'right', legendBox: box });
+  const doc = file(files, 'overview-legend.svg').doc;
+  assert(
+    /^translate\([-\d.]+,[-\d.]+\) matrix\(/.test(
+      doc.getElementById('Legend').getAttribute('transform'),
+    ),
+  );
+  const vb = doc.documentElement.getAttribute('viewBox').split(' ').map(Number);
+  assertClose(vb[3] / vb[2], 9 / 16, 1e-3, 'viewBox ratio');
+  await assertThrows(() => generateFiles(prepared, { legendPosition: 'left' }), /legend box/);
+  await assertThrows(
+    () => generateFiles(prepared, { legendPosition: 'middle', legendBox: box }),
+    /legend position/,
   );
 });
