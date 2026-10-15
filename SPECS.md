@@ -300,14 +300,14 @@ Sample scores, used as `examples/ratings.csv` and as the regression input:
 
 | Score | Criteria |
 |---|---|
-| Exemplary (5) | 2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24 |
-| Satisfactory (4) | 3, 8, 17, 19 |
+| Exemplary (5) | 2, 5, 10, 12, 15, 18, 20, 22, 23 |
+| Satisfactory (4) | 3, 8, 17 |
 | Ambivalent (3) | 1, 9, 11, 13, 16 |
-| Weak (2) | 7 |
-| Insufficient (1) | – |
+| Weak (2) | 4, 7, 19, 21 |
+| Insufficient (1) | 6, 14, 24 |
 
 Expected score order in the score overview, clockwise from 12 o'clock:
-`2, 4, 5, 6, 10, 12, 14, 15, 18, 20, 21, 22, 23, 24 | 3, 8, 17, 19 | 1, 9, 11, 13, 16 | 7`
+`2, 5, 10, 12, 15, 18, 20, 22, 23 | 3, 8, 17 | 1, 9, 11, 13, 16 | 4, 7, 19, 21 | 6, 14, 24`
 
 **Tests** run in the browser, because the generator needs `DOMParser`, `XMLSerializer` and real text measurement: `tests/index.html` (served locally, §3) runs all tests and shows pass/fail, with no test framework needed. They cover:
 

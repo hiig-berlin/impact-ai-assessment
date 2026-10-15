@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rating Pie Generator</title>
+    <meta
+      name="description"
+      content="Turns a CSV of criterion scores into the report's radial 24-criteria diagram, as SVG, PNG and JPG."
+    />
+    <link
+      rel="preload"
+      href="fonts/pt-sans-regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="preload" href="fonts/pt-sans-bold.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Rating Pie Generator</h1>
+      <p>
+        Turns a CSV of criterion scores into the report’s “24 criteria” diagram and its pie pieces,
+        as SVG, PNG and JPG. Everything happens in your browser; nothing is uploaded.
+      </p>
+    </header>
+
+    <main>
+      <p id="app-error" class="message-box error" role="alert" hidden></p>
+
+      <section aria-labelledby="input-heading">
+        <h2 id="input-heading">1. Scores CSV</h2>
+        <div id="dropzone" class="dropzone">
+          <p>Drop a CSV file here, or</p>
+          <input id="csv-input" class="visually-hidden" type="file" accept=".csv,.txt,text/csv" />
+          <label for="csv-input" class="button primary">Choose CSV file…</label>
+          <button id="use-example" class="button" type="button">Use example scores</button>
+          <p id="file-status" class="file-status" aria-live="polite">No file loaded yet.</p>
+        </div>
+        <p class="hint">
+          Columns: <code>criterion number</code>, <code>criterion name</code> (optional),
+          <code>score</code> (1–5). Delimiter <code>;</code>, <code>,</code> or tab.
+          <a href="examples/ratings.csv" download="ratings.csv">Example CSV</a> ·
+          <button id="download-template-csv" class="link-button" type="button">
+            Empty CSV template
+          </button>
+        </p>
+        <div id="messages" aria-live="polite"></div>
+      </section>
+
+      <section aria-labelledby="options-heading">
+        <h2 id="options-heading">2. Options</h2>
+        <div class="options">
+          <fieldset>
+            <legend>Pie position (cluster and score files)</legend>
+            <label class="choice">
+              <input type="radio" name="pie-position" value="original" checked />
+              Original position <span class="muted">(stacks onto the overview)</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="pie-position" value="start" />
+              Start angle <span class="muted">(each pie on its own, like a gauge)</span>
+            </label>
+            <div id="start-angle-controls" class="start-angle" hidden>
+              <label for="start-angle">Start angle (0–359°, clockwise from 12 o’clock)</label>
+              <div class="start-angle-row">
+                <input
+                  id="start-angle"
+                  type="number"
+                  min="0"
+                  max="359"
+                  step="1"
+                  value="270"
+                  inputmode="numeric"
+                  aria-describedby="start-angle-error"
+                />
+                <span class="quick-angles" role="group" aria-label="Quick start angles">
+                  <button type="button" class="button small" data-angle="0">0°</button>
+                  <button type="button" class="button small" data-angle="90">90°</button>
+                  <button type="button" class="button small" data-angle="180">180°</button>
+                  <button type="button" class="button small" data-angle="270">270°</button>
+                </span>
+              </div>
+              <p id="start-angle-error" class="field-error" hidden>
+                Enter a whole number from 0 to 359.
+              </p>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>PNG/JPG size</legend>
+            <label class="choice"
+              ><input type="radio" name="scale" value="1" checked /> ×1 (1080 px)</label
+            >
+            <label class="choice"><input type="radio" name="scale" value="2" /> ×2 (2160 px)</label>
+            <label class="choice"><input type="radio" name="scale" value="4" /> ×4 (4320 px)</label>
+          </fieldset>
+        </div>
+      </section>
+
+      <section aria-labelledby="preview-heading">
+        <h2 id="preview-heading">3. Preview</h2>
+        <div id="preview" class="preview">
+          <p class="placeholder">Load a CSV to see the preview.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="downloads-heading">
+        <h2 id="downloads-heading">4. Downloads</h2>
+        <div class="zip-row">
+          <fieldset class="inline">
+            <legend>Formats in the ZIP</legend>
+            <label class="choice"
+              ><input type="checkbox" name="zip-format" value="svg" checked /> SVG</label
+            >
+            <label class="choice"
+              ><input type="checkbox" name="zip-format" value="png" checked /> PNG</label
+            >
+            <label class="choice"
+              ><input type="checkbox" name="zip-format" value="jpg" checked /> JPG</label
+            >
+          </fieldset>
+          <button id="download-zip" class="button primary" type="button" disabled>
+            Download all (ZIP)
+          </button>
+          <p id="zip-status" class="zip-status" aria-live="polite"></p>
+        </div>
+        <div id="file-list" class="file-list">
+          <p class="placeholder">Load a CSV to see the files.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="help-heading">
+        <h2 id="help-heading">How to use the files</h2>
+        <ol class="help">
+          <li>Download the SVG (or the ZIP) and open the SVG in Affinity.</li>
+          <li>
+            The layers are named (categories, scores, “07 Accountability”, Wedge, Rating 1–5,
+            Number, Label) and the text stays editable in PT Sans.
+          </li>
+          <li>
+            Save it as an Affinity document (<code>.af</code>) if you want to keep editing it.
+          </li>
+          <li>
+            In “original position” mode, cluster and slice files line up with
+            <code>overview.svg</code> and score files with <code>overview-scores.svg</code> when
+            stacked.
+          </li>
+          <li>
+            PNG and JPG files are for slides and web use; they include PT Sans, so text is correct
+            anywhere.
+          </li>
+        </ol>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      <p>
+        Fonts: PT Sans by ParaType (SIL Open Font License). ZIP: fflate (MIT).
+        <a href="https://github.com/hiig-berlin/impact-ai-assessment">Source on GitHub</a>
+      </p>
+    </footer>
+  </body>
+</html>
