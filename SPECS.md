@@ -4,7 +4,7 @@ A small static website that turns a CSV of criterion scores into the radial "24 
 
 The repository and code keep the working name "Rating Pie Generator" (`rating-pie` in file names); "Impact AI Assessment Wheel" is the name shown to users.
 
-Status: version 1 (`v0.1.0-alpha`) is implemented. Round 2 (application layout, §8; legend position, §5.2) is in review; decisions still open are marked **Open**.
+Status: version 1 (`v0.1.0-alpha`) is implemented. Round 2 (application layout, §8; legend position, §5.2) is specified and ready for implementation.
 
 ---
 
@@ -312,7 +312,7 @@ One page, in English, laid out like an application. The mockup from October 2026
 
 **Header bar** (full width):
 
-- left: logo (**Open**: logo file to be provided), title **Impact AI Assessment Wheel**, subtitle "Turn assessment scores into report-ready graphics · v<version>";
+- left: the HIIG emblem (`assets/hiig-emblem.svg`: the building and the I/O squares from the HIIG logo, without lettering, in one grey `#55555c` so the attention stays on the graphics; links to https://www.hiig.de/en/), title **Impact AI Assessment Wheel**, subtitle "Turn assessment scores into report-ready graphics · v<version>";
 - right: icon links, each with a visible tooltip and an `aria-label`:
   - Impact AI project page: https://www.hiig.de/en/project/impact-ai/
   - method documentation on Zenodo, shown as "DOI": https://doi.org/10.5281/zenodo.23186663
@@ -387,6 +387,7 @@ style.css
 template/template.svg                    cleaned template (generated)
 template/ImpactAssessment_Template.svg   original Affinity export (source)
 fonts/            PT Sans Regular + Bold (.woff2), OFL licence
+assets/           HIIG emblem (hiig-emblem.svg)
 examples/ratings.csv
 vendor/           ZIP library (e.g. fflate, pinned version) + its licence
 tests/            index.html, test modules, expected/ snapshots

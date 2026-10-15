@@ -26,3 +26,6 @@ Third-party files keep their own licences:
 
 - fonts/: PT Sans (ParaType), SIL Open Font License 1.1, see fonts/OFL.txt
 - vendor/fflate-0.8.2/: fflate, MIT, see vendor/fflate-0.8.2/LICENSE
+- assets/hiig-emblem.svg: emblem from the logo of the Alexander von Humboldt
+  Institute for Internet and Society (HIIG); not covered by the MIT licence,
+  all rights reserved by HIIG
