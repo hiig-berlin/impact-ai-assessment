@@ -560,18 +560,41 @@ function scoreLayout(base) {
   });
 }
 
-/**
- * All output documents (§5) as [{ path, kind, legend, svg }]; svg is a string.
- * @param {object} base from prepare()
- */
-export function generateFiles(base) {
-  const files = [];
-  const add = (path, kind, spec) =>
-    files.push({ path, kind, legend: Boolean(spec.legend), svg: serialize(buildDocument(base, spec)) });
+export const PIE_POSITION = { original: 'original', start: 'start' };
+export const DEFAULT_START_ANGLE = 270;
 
+/**
+ * All output documents (§5) as [{ path, kind, name, legend, svg }]; svg is a string.
+ * @param {object} base from prepare()
+ * @param {object} [options]
+ * @param {'original'|'start'} [options.piePosition] cluster and score files (§7.1)
+ * @param {number} [options.startAngle] whole number 0–359, for 'start'
+ */
+export function generateFiles(base, options = {}) {
+  const piePosition = options.piePosition ?? PIE_POSITION.original;
+  const startAngle = options.startAngle ?? DEFAULT_START_ANGLE;
+  if (!Object.values(PIE_POSITION).includes(piePosition)) {
+    throw new Error(`generateFiles: unknown pie position "${piePosition}".`);
+  }
+  if (!Number.isInteger(startAngle) || startAngle < 0 || startAngle >= FULL_CIRCLE) {
+    throw new Error(`generateFiles: start angle must be a whole number 0–359, got ${startAngle}.`);
+  }
+  const ownLayout = piePosition === PIE_POSITION.start;
+
+  const files = [];
+  const add = (path, kind, name, spec) =>
+    files.push({
+      path,
+      kind,
+      name,
+      legend: Boolean(spec.legend),
+      svg: serialize(buildDocument(base, spec)),
+    });
+
+  // Overviews always start at 12 o'clock.
   const categoryGroups = categoryOrderGroups(base, templateAngle);
   for (const legend of [false, true]) {
-    add(legend ? 'overview-legend.svg' : 'overview.svg', 'overview', {
+    add(legend ? 'overview-legend.svg' : 'overview.svg', 'overview', 'Overview', {
       groups: categoryGroups,
       centre: 'all',
       legend,
@@ -582,11 +605,42 @@ export function generateFiles(base) {
   const scoreGroups = scores.map((s) => ({ id: s.name, name: s.name, criteria: s.angles }));
   const separators = scores.length > 1 ? scores.map((s) => s.start) : [];
   for (const legend of [false, true]) {
-    add(legend ? 'overview-scores-legend.svg' : 'overview-scores.svg', 'overview', {
+    add(legend ? 'overview-scores-legend.svg' : 'overview-scores.svg', 'overview', 'Overview by score', {
       groups: scoreGroups,
       centre: null,
       legend,
       separators,
+    });
+  }
+
+  for (const category of base.template.categories) {
+    const numbers = CRITERIA.filter((c) => c.category.id === category.id).map((c) => c.number);
+    const angles = ownLayout
+      ? consecutiveAngles(numbers, startAngle)
+      : new Map(numbers.map((n) => [n, templateAngle(n)]));
+    const groups = [{ id: category.id, name: category.name, criteria: angles }];
+    const delta = angles.get(numbers[0]) - templateAngle(numbers[0]);
+    add(`clusters/${category.slug}.svg`, 'cluster', category.name, { groups, crop: true });
+    add(`clusters/${category.slug}-centre.svg`, 'cluster', `${category.name} with centre`, {
+      groups,
+      crop: true,
+      centre: { categoryId: category.id, delta },
+    });
+  }
+
+  for (const score of scores) {
+    const angles = ownLayout ? consecutiveAngles(score.criteria, startAngle) : score.angles;
+    add(`scores/${score.slug}.svg`, 'score', score.name, {
+      groups: [{ id: score.name, name: score.name, criteria: angles }],
+      crop: true,
+    });
+  }
+
+  // Slices always keep their category-overview position.
+  for (const c of CRITERIA) {
+    add(`slices/${c.slug}.svg`, 'slice', criterionLayerName(c.number, base.labels.get(c.number)), {
+      groups: categoryOrderGroups(base, templateAngle, [c.number]),
+      crop: true,
     });
   }
   return files;

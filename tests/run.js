@@ -6,6 +6,8 @@ import './names.test.js';
 import './csv.test.js';
 import './template.test.js';
 import './overview.test.js';
+import './files.test.js';
+import './snapshot.test.js';
 
 const list = document.getElementById('results');
 const summary = document.getElementById('summary');

@@ -30,9 +30,9 @@ function textDirection(doc, id) {
   return normaliseAngle((Math.atan2(b, a) * 180) / Math.PI);
 }
 
-test('overviews: file list', () => {
+test('overviews: first four files', () => {
   assertEqual(
-    files.map((f) => f.path),
+    files.slice(0, 4).map((f) => f.path),
     ['overview.svg', 'overview-legend.svg', 'overview-scores.svg', 'overview-scores-legend.svg'],
   );
 });
