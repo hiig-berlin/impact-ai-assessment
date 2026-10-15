@@ -348,13 +348,17 @@ Right column, the **preview**:
 
 **Visual style**: contemporary and calm, so the graphics stay the focus (see the mockup).
 
-- light neutral page (`#f5f6f7`) with white panels: large radii (20 px panels, 12–16 px controls), soft shadows instead of borders;
+- light neutral page (`#f5f6f7`) with white panels and soft shadows instead of borders;
+- moderate radii for rectangles (12 px panels, 10 px preview stage and tiles, 8 px tracks, 6 px segment thumbs and tabs); buttons, chips, checkboxes, badges and the switch are fully rounded;
 - segmented controls (tabs, pie position, legend position, size, view switch) as a light grey track with a white "thumb" for the selected option;
 - pill-shaped buttons and format chips; tinted (not solid) selected states;
 - the preview on a light dot-grid stage, with a floating bar for the file menu and downloads;
 - a sticky, slightly translucent header.
 
-**UI typeface**: Instrument Sans (SIL Open Font License), vendored like PT Sans. The graphics themselves keep PT Sans.
+**Typefaces** (both SIL Open Font License, vendored):
+
+- Instrument Sans for headings, the title, buttons, tabs, control labels and other UI elements;
+- PT Sans for running text (descriptions, help text, status and validation messages), as in the graphics themselves.
 
 **Colours**: primary colour `#007ba3` (the Social Sustainability level-5 blue) for primary buttons, selected states, the active tab, the legend switch and links; `#00617f` for hover. White text on `#007ba3` has a contrast of 4.8 : 1. The other UI colours are neutral greys.
 
