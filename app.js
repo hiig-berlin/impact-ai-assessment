@@ -420,7 +420,7 @@ function setBusy(busy) {
 }
 
 async function downloadCurrent(format) {
-  if (state.busy) return;
+  if (state.busy || !state.files.length) return;
   const items = tabItems(state.tab);
   const file = items[selectedIndex(items)].file;
   setBusy(true);
@@ -437,7 +437,7 @@ async function downloadCurrent(format) {
 // ZIP with the same folder structure; raster files are created one after
 // another and released after compression (§5.1 "Memory").
 async function downloadZip(files, name, { withInput }) {
-  if (state.busy) return;
+  if (state.busy || !state.files.length || !files.length) return;
   const formats = zipFormats();
   if (!formats.length) {
     toast('Select at least one format under Options.');
@@ -590,7 +590,20 @@ function setUpEvents() {
   $('#download-all').addEventListener('click', downloadAll);
 }
 
+// Firefox restores form controls (checked, disabled) when the page is reloaded,
+// so bring every control in line with the app's state before anything else.
+function syncControls() {
+  state.view = $('input[name="view"]:checked')?.value ?? state.view;
+  state.centre = $('#centre-toggle').checked;
+  $('#legend-switch').setAttribute('aria-checked', String(state.legendOn));
+  $('#legend-positions').disabled = !state.legendOn;
+  $('#download-all').disabled = true; // until a CSV without errors is loaded
+  $('#download-group').disabled = false;
+  $$('[data-download]').forEach((button) => (button.disabled = false));
+}
+
 async function init() {
+  syncControls();
   setUpEvents();
   readOptions();
   render();
