@@ -289,6 +289,10 @@ export function rotatePath(d, angle) {
 // --- Text measurement (§7 step 8) -------------------------------------------
 
 const MEASURE_FAMILY = 'Rating Pie PT Sans';
+// Texts are measured at this multiple of their size and the result divided
+// back: some browsers (Firefox) round glyph advances to whole pixels at small
+// sizes, which adds up to several units over a long label.
+const MEASURE_SCALE = 100;
 export const FONT_URLS = {
   regular: new URL('./fonts/pt-sans-regular.woff2', import.meta.url).href,
   bold: new URL('./fonts/pt-sans-bold.woff2', import.meta.url).href,
@@ -321,6 +325,9 @@ export async function createMeasurer(template, doc = document) {
     const text = doc.createElementNS(SVG_NS, 'text');
     text.setAttribute('style', source.getAttribute('style'));
     text.style.fontFamily = `'${MEASURE_FAMILY}'`;
+    text.style.fontSize = `${parseFloat(styleProperty(source, 'font-size')) * MEASURE_SCALE}px`;
+    text.style.textRendering = 'geometricPrecision';
+    text.style.fontKerning = 'normal';
     svg.append(text);
     texts[kind] = text;
   }
@@ -332,7 +339,7 @@ export async function createMeasurer(template, doc = document) {
       const key = `${kind}\n${content}`;
       if (!cache.has(key)) {
         texts[kind].textContent = content;
-        cache.set(key, texts[kind].getComputedTextLength());
+        cache.set(key, texts[kind].getComputedTextLength() / MEASURE_SCALE);
       }
       return cache.get(key);
     },
