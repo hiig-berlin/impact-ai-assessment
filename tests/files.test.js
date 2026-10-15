@@ -1,7 +1,15 @@
 import { test, assert, assertClose, assertEqual, assertThrows } from './harness.js';
 import { base, exampleRatings, file, layerName, parseSvg } from './fixture.js';
 import { cid, pathSpan, textIsUpright, wedgeSpan } from './geometry.js';
-import { CROP, CENTRE, ICON_RADIUS, generateFiles, normaliseAngle, polar } from '../pie.js';
+import {
+  CROP,
+  CENTRE,
+  ICON_RADIUS,
+  generateFiles,
+  normaliseAngle,
+  polar,
+  serializeElement,
+} from '../pie.js';
 import { CATEGORIES, CRITERIA, SCORES } from '../names.js';
 
 const prepared = base();
@@ -43,6 +51,8 @@ test('files: valid XML with the Affinity namespace', () => {
     assert(!doc.querySelector('parsererror'), `${f.path} parses`);
     assert(f.svg.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<svg'), f.path);
     assert(f.svg.includes('xmlns:affinity="https://www.affinity.studio/"'), f.path);
+    // Exactly one XML declaration (Firefox's XMLSerializer adds its own).
+    assertEqual(f.svg.match(/<\?xml/g).length, 1, `${f.path}: XML declarations`);
   }
 });
 
@@ -241,4 +251,16 @@ test('CSV name changes label and layer name in all outputs, not file names', () 
     const mid = wedgeSpan(doc, 'C07').mid;
     assert(textIsUpright(doc, 'C07', mid), f.path);
   }
+});
+
+test('serializer: escapes text and attributes, keeps namespaces, self-closes empty elements', () => {
+  const doc = parseSvg(
+    '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:affinity="https://www.affinity.studio/">' +
+      '<g affinity:id="a &amp; &quot;b&quot;"><text>x &lt; y &amp; z</text><path d="M0,0"/></g></svg>',
+  );
+  assertEqual(
+    serializeElement(doc.documentElement),
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:affinity="https://www.affinity.studio/">' +
+      '<g affinity:id="a &amp; &quot;b&quot;"><text>x &lt; y &amp; z</text><path d="M0,0"/></g></svg>',
+  );
 });

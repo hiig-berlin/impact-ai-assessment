@@ -561,8 +561,47 @@ export function buildDocument(base, spec) {
   return doc;
 }
 
+// Our own serialiser instead of XMLSerializer, whose output differs between
+// browsers (Firefox, for example, adds its own XML declaration). Attributes are
+// written in DOM order with their qualified names; namespace declarations are
+// ordinary attributes of the root, as parsed from the template.
+const XML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' };
+const escapeText = (text) => text.replace(/[&<>]/g, (ch) => XML_ESCAPES[ch]);
+const escapeAttribute = (text) =>
+  text
+    .replace(/[&<>"]/g, (ch) => XML_ESCAPES[ch])
+    .replace(/[\t\n\r]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+function serializeNode(node) {
+  switch (node.nodeType) {
+    case Node.ELEMENT_NODE: {
+      const attributes = [...node.attributes]
+        .map((attr) => ` ${attr.name}="${escapeAttribute(attr.value)}"`)
+        .join('');
+      const children = [...node.childNodes].map(serializeNode).join('');
+      return children
+        ? `<${node.nodeName}${attributes}>${children}</${node.nodeName}>`
+        : `<${node.nodeName}${attributes}/>`;
+    }
+    case Node.TEXT_NODE:
+      return escapeText(node.data);
+    case Node.CDATA_SECTION_NODE:
+      return `<![CDATA[${node.data}]]>`;
+    case Node.COMMENT_NODE:
+      return `<!--${node.data}-->`;
+    default:
+      return '';
+  }
+}
+
+// An SVG element (usually the root) as XML text, identical in every browser.
+export function serializeElement(element) {
+  return serializeNode(element);
+}
+
+// A whole output document, with XML declaration.
 export function serialize(doc) {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(doc)}\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${serializeElement(doc.documentElement)}\n`;
 }
 
 // --- Output files (§5) --------------------------------------------------------

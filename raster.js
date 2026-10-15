@@ -1,7 +1,7 @@
 // PNG/JPG rendering of the generated SVGs (SPECS.md §5.1): framing, font
 // embedding and 72 dpi metadata. No UI code.
 
-import { CROP, FONT_URLS, SVG_NS } from './pie.js';
+import { CROP, FONT_URLS, SVG_NS, serializeElement } from './pie.js';
 
 export const RASTER_SIDE = 1080; // px, square side at ×1
 export const RASTER_SCALES = [1, 2, 4];
@@ -153,7 +153,7 @@ export async function rasterSvg(svgText, frame) {
   );
   root.setAttribute('width', `${frame.pxWidth}px`);
   root.setAttribute('height', `${frame.pxHeight}px`);
-  return new XMLSerializer().serializeToString(doc);
+  return serializeElement(doc.documentElement);
 }
 
 // --- Rendering ------------------------------------------------------------------
