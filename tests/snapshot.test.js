@@ -1,10 +1,12 @@
 // Snapshot tests (§9): the SVGs generated from examples/ratings.csv with the
-// default options must equal tests/expected/. On a difference, the actual file
-// can be downloaded from the test page to review and, if correct, replace the
-// expected file.
+// default options must equal tests/expected/, except for text x positions,
+// which may differ by TEXT_X_TOLERANCE between browsers (snapshot-compare.js).
+// On a difference, the actual file can be downloaded from the test page to
+// review and, if correct, replace the expected file.
 
-import { test, AssertionError } from './harness.js';
+import { test, assert, assertEqual, AssertionError } from './harness.js';
 import { base } from './fixture.js';
+import { compareSnapshot, TEXT_X_TOLERANCE } from './snapshot-compare.js';
 import { generateFiles } from '../pie.js';
 
 const actions = document.getElementById('actions');
@@ -19,14 +21,23 @@ function offerDownload(path, svg) {
   actions.append(item);
 }
 
-// Largest difference between numbers at the same place, if only numbers differ.
-function numericDifference(a, b) {
-  const pattern = /-?\d+(?:\.\d+)?/g;
-  if (a.replace(pattern, '#') !== b.replace(pattern, '#')) return null;
-  const na = a.match(pattern) || [];
-  const nb = b.match(pattern) || [];
-  return Math.max(0, ...na.map((v, i) => Math.abs(Number(v) - Number(nb[i]))));
-}
+const SAMPLE =
+  '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg">' +
+  '<text id="t" x="100.000px" y="5px">A</text><path d="M1,2"/></svg>\n';
+
+test('snapshot comparison: text x within tolerance passes, anything else fails', () => {
+  assert(compareSnapshot(SAMPLE, SAMPLE).equal);
+  const shifted = compareSnapshot(SAMPLE, SAMPLE.replace('100.000px', '100.990px'));
+  assert(shifted.equal, shifted.problem);
+  assertEqual(Number(shifted.maxTextDiff.toFixed(3)), 0.99);
+  assert(
+    !compareSnapshot(SAMPLE, SAMPLE.replace('100.000px', `${100 + TEXT_X_TOLERANCE + 0.5}px`))
+      .equal,
+  );
+  assert(!compareSnapshot(SAMPLE, SAMPLE.replace('y="5px"', 'y="5.5px"')).equal);
+  assert(!compareSnapshot(SAMPLE, SAMPLE.replace('M1,2', 'M1,2.001')).equal);
+  assert(!compareSnapshot(SAMPLE, SAMPLE.replace('>A<', '>B<')).equal);
+});
 
 for (const f of generateFiles(base())) {
   test(`snapshot: ${f.path}`, async () => {
@@ -35,16 +46,9 @@ for (const f of generateFiles(base())) {
       offerDownload(f.path, f.svg);
       throw new AssertionError(`tests/expected/${f.path} is missing`);
     }
-    const expected = await response.text();
-    if (expected === f.svg) return;
+    const result = compareSnapshot(await response.text(), f.svg);
+    if (result.equal) return;
     offerDownload(f.path, f.svg);
-    const lineA = expected.split('\n');
-    const lineB = f.svg.split('\n');
-    const line = lineA.findIndex((l, i) => l !== lineB[i]);
-    const numeric = numericDifference(expected, f.svg);
-    throw new AssertionError(
-      `differs from tests/expected/${f.path} (first at line ${line + 1})` +
-        (numeric !== null ? `; only numbers differ, by at most ${numeric}` : ''),
-    );
+    throw new AssertionError(`differs from tests/expected/${f.path}: ${result.problem}`);
   });
 }

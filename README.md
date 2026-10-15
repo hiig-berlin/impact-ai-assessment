@@ -92,9 +92,10 @@ options) with `tests/expected/`. When an output changes on purpose, the test pag
 the new file for download next to the failing test; check it and replace the file in
 `tests/expected/` (keep the folder structure: `clusters/`, `scores/`, `slices/`).
 
-Text positions depend on the browser's measurement of PT Sans, so the snapshots can
-differ in the last decimals between browsers; the failure message then says
-"only numbers differ, by at most …".
+Text positions depend on the browser's measurement of PT Sans, which differs slightly
+between browsers (Firefox vs Chromium by up to about 1 unit, 0.04 % of the pie). So the
+snapshot test accepts text `x` positions within ±1 unit and compares everything else
+exactly (`tests/snapshot-compare.js`).
 
 ## Updating the built-in template
 
