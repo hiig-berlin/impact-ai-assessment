@@ -111,7 +111,8 @@ the new file for download next to the failing test; check it and replace the fil
 Text positions depend on the browser's measurement of PT Sans, which differs slightly
 between browsers (Firefox vs Chromium by up to about 1 unit, 0.04 % of the pie). So the
 snapshot test accepts text `x` positions within ±1 unit and compares everything else
-exactly (`tests/snapshot-compare.js`).
+exactly (`tests/snapshot-compare.js`). The same tolerance applies to the page `viewBox` and
+the legend's `transform`, which follow from the measured legend box.
 
 ## Updating the built-in template
 
