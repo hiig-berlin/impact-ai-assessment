@@ -334,7 +334,7 @@ Left column:
    - legend: an on/off switch (default off) and position **Left / Right / Top / Bottom** (default bottom; only active when the switch is on). The switch decides whether the overview preview and the single-file downloads of the overviews show the `-legend` version; the ZIP always has both (§5.2);
    - PNG/JPG size: ×1 (1080 px, default) / ×2 (2160 px) / ×4 (4320 px);
    - formats in the ZIP: SVG, PNG, JPG (all selected by default).
-3. Short help: "Open the SVG in Affinity → layers are named, text stays editable → save as .af".
+3. Short help, headed "Editing the files": "Open the SVG files in a vector graphics program such as Affinity or Illustrator: the layers are named and the text stays editable. To keep working on a graphic later, save it in the program's own format or as SVG."
 
 Right column, the **preview**:
 
@@ -345,6 +345,16 @@ Right column, the **preview**:
 - **Clusters tab**: a "With centre sector" checkbox switches between `clusters/<category>` and `clusters/<category>-centre`. The full ZIP always has both.
 - **Previews** are framed like the PNG files (square, or extended for the legend), with embedded fonts, on a light checkerboard so transparent areas are visible. They update when options change.
 - **Empty state** before a CSV is loaded: a placeholder in the preview area, and the downloads disabled.
+
+**Visual style**: contemporary and calm, so the graphics stay the focus (see the mockup).
+
+- light neutral page (`#f5f6f7`) with white panels: large radii (20 px panels, 12–16 px controls), soft shadows instead of borders;
+- segmented controls (tabs, pie position, legend position, size, view switch) as a light grey track with a white "thumb" for the selected option;
+- pill-shaped buttons and format chips; tinted (not solid) selected states;
+- the preview on a light dot-grid stage, with a floating bar for the file menu and downloads;
+- a sticky, slightly translucent header.
+
+**UI typeface**: Instrument Sans (SIL Open Font License), vendored like PT Sans. The graphics themselves keep PT Sans.
 
 **Colours**: primary colour `#007ba3` (the Social Sustainability level-5 blue) for primary buttons, selected states, the active tab, the legend switch and links; `#00617f` for hover. White text on `#007ba3` has a contrast of 4.8 : 1. The other UI colours are neutral greys.
 
@@ -386,7 +396,7 @@ names.js          categories, criteria, scores, slugs (the tables in §6.1–§6
 style.css
 template/template.svg                    cleaned template (generated)
 template/ImpactAssessment_Template.svg   original Affinity export (source)
-fonts/            PT Sans Regular + Bold (.woff2), OFL licence
+fonts/            PT Sans Regular + Bold (.woff2) for the graphics, Instrument Sans for the UI; OFL licence
 assets/           HIIG emblem (hiig-emblem.svg)
 examples/ratings.csv
 vendor/           ZIP library (e.g. fflate, pinned version) + its licence
