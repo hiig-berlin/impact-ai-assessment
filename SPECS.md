@@ -4,7 +4,7 @@ A small static website that turns a CSV of criterion scores into the radial "24 
 
 The repository and code keep the working name "Rating Pie Generator" (`rating-pie` in file names); "Impact AI Assessment Wheel" is the name shown to users.
 
-Status: version 1 (`v0.1.0-alpha`) is implemented. Round 2 (application layout, §8; legend position, §5.2) is specified and ready for implementation.
+Status: `v0.2.0-beta`. Version 1 (`v0.1.0-alpha`) and round 2 (application layout, §8; legend position, §5.2) are implemented; the tool is being finalised with the team.
 
 ---
 
